@@ -24,35 +24,35 @@ const Navbar = () => {
                     onClick={() => setIsOpen(!isOpen)}
                 />
                 <Link
-                    onClick={() => { scrollTo(0, 0), setIsOpen(false) }}
+                    onClick={() => { scrollTo(0, 0); setIsOpen(false) }}
                     to='/'
                     className={`px-4 py-2 rounded-full transition-colors ${location.pathname === '/' ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 >
                     Home
                 </Link>
                 <Link
-                    onClick={() => { scrollTo(0, 0), setIsOpen(false) }}
+                    onClick={() => { scrollTo(0, 0); setIsOpen(false) }}
                     to='/movies'
                     className={`px-4 py-2 rounded-full transition-colors ${location.pathname === '/movies' ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 >
                     Movies
                 </Link>
                 <Link
-                    onClick={() => { scrollTo(0, 0), setIsOpen(false) }}
+                    onClick={() => { scrollTo(0, 0); setIsOpen(false) }}
                     to='/'
                 // className={`px-4 py-2 rounded-full transition-colors ${location.pathname === '/theaters' ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 >
                     Theaters
                 </Link>
                 <Link
-                    onClick={() => { scrollTo(0, 0), setIsOpen(false) }}
+                    onClick={() => { scrollTo(0, 0); setIsOpen(false) }}
                     to='/'
                 // className={`px-4 py-2 rounded-full transition-colors ${location.pathname === '/releases' ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 >
                     Releases
                 </Link>
                 <Link
-                    onClick={() => { scrollTo(0, 0), setIsOpen(false) }}
+                    onClick={() => { scrollTo(0, 0); setIsOpen(false) }}
                     to='/favorites'
                     className={`px-4 py-2 rounded-full transition-colors ${location.pathname === '/favorites' ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 >
