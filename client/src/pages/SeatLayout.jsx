@@ -3,6 +3,7 @@ import { /*useNavigate,*/ useParams } from "react-router-dom"
 import { dummyDateTimeData, dummyShowsData } from "../assets/assets"
 import Loading from "../components/Loading"
 import { ClockIcon } from "lucide-react"
+import isoTimeFormat from "../lib/isoTimeFormat"
 
 const SeatLayout = () => {
 
@@ -36,7 +37,7 @@ const SeatLayout = () => {
                     {show.dateTime[date].map((item) => (
                         <div className={`flex items-center gap-2 px-6 py-2 w-max rounded-r-md cursor-pointer transition-all ${selectedTime?.time === item.time ? "bg-primary text-white" : "hover:bg-primary/20"}`}>
                             <ClockIcon className="w-4 h-4"/>
-                            <p className="text-sm">{item.time}</p>
+                            <p className="text-sm">{isoTimeFormat(item.time)}</p>
                         </div>
                     ))}
                 </div>
