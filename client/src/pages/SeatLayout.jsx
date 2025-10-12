@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react"
 import { /*useNavigate,*/ useParams } from "react-router-dom"
-import { dummyDateTimeData, dummyShowsData } from "../assets/assets"
+import { assets, dummyDateTimeData, dummyShowsData } from "../assets/assets"
 import Loading from "../components/Loading"
 import { ClockIcon } from "lucide-react"
 import isoTimeFormat from "../lib/isoTimeFormat"
+import BlurCircle from "../components/BlurCircle"
 
 const SeatLayout = () => {
 
@@ -48,8 +49,12 @@ const SeatLayout = () => {
             </div>
 
             {/** Seats Layout */}
-            <div>
-
+            <div className="relative flex-1 flex flex-col items-center max-md:mt-16">
+                <BlurCircle top="-100px" left="-100px"/>
+                <BlurCircle bottom="0" right="0"/>
+                <h1 className="text-2xl font-semibold mb-4">Select your seat</h1>
+                <img src={assets.screenImage} alt="screen"/>
+                <p className="text-gray-400 text-sm mb-6">SCREEN SIDE</p>
             </div>
         </div>
     ) : (
