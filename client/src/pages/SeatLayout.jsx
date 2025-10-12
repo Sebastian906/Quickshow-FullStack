@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
-import { /*useNavigate,*/ useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { assets, dummyDateTimeData, dummyShowsData } from "../assets/assets"
 import Loading from "../components/Loading"
-import { ClockIcon } from "lucide-react"
+import { ArrowRightIcon, ClockIcon } from "lucide-react"
 import isoTimeFormat from "../lib/isoTimeFormat"
 import BlurCircle from "../components/BlurCircle"
 import toast from 'react-hot-toast'
@@ -16,7 +16,7 @@ const SeatLayout = () => {
     const [selectedTime, setSelectedTime] = useState(null)
     const [show, setShow] = useState(null)
 
-    // const navigate = useNavigate()
+    const navigate = useNavigate()
 
     const getShow = async () => {
         const show = dummyShowsData.find(show => show._id === id)
@@ -102,6 +102,13 @@ const SeatLayout = () => {
                         ))}
                     </div>
                 </div>
+                <button 
+                    onClick={() => navigate('/my-bookings')}
+                    className="flex items-center gap-1 mt-20 px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer active:scale-95"
+                >
+                    Proceed to Checkout
+                    <ArrowRightIcon strokeWidth={3} className="w-4 h-4"/>
+                </button>
             </div>
         </div>
     ) : (
