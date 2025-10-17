@@ -8,6 +8,11 @@ export class AppController {
 
   @Get()
   getHello(): string {
-    return 'Server is live!';
+    return this.appService.getHello();
+  }
+
+  @Get('db-status')
+  getDatabaseStatus(): object {
+    return this.appService.getDatabaseStatus();
   }
 }
