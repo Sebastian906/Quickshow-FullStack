@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { getDatabaseConfig } from './configs/database.config';
 import { UsersModule } from './users/users.module';
+import { InngestModule } from './inngest/inngest.module';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { UsersModule } from './users/users.module';
       useFactory: getDatabaseConfig,
       inject: [ConfigService],
     }),
-    UsersModule
+    UsersModule,
+    InngestModule,
   ],
   controllers: [AppController],
   providers: [AppService],

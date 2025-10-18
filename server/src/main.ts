@@ -1,12 +1,15 @@
 /* eslint-disable prettier/prettier */
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { clerkMiddleware } from '@clerk/express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Habilitar CORS
   app.enableCors();
+
+  app.use(clerkMiddleware());
 
   const port = process.env.PORT || 3000;
 
