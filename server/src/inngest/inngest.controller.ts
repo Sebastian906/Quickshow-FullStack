@@ -17,7 +17,7 @@ export class InngestController {
         });
     }
 
-    @All('*')
+    @All()
     async handleInngest(@Req() req: Request, @Res() res: Response) {
         return this.inngestServe(req, res);
     }
