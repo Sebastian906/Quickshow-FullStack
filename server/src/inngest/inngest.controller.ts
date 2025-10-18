@@ -2,17 +2,23 @@ import { All, Controller, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { serve } from 'inngest/express';
 import { inngest } from '../configs/inngest.config';
-import { functions } from './functions';
+import { InngestService } from './inngest.service';
 
 @Controller('api/inngest')
 export class InngestController {
-    private inngestService = serve({
-        client: inngest,
-        functions,
-    });
+    private inngestServe;
+
+    constructor(private readonly inngestService: InngestService) {
+        const functions = this.inngestService.getFunctions();
+
+        this.inngestServe = serve({
+            client: inngest,
+            functions,
+        });
+    }
 
     @All('*')
     async handleInngest(@Req() req: Request, @Res() res: Response) {
-        return this.inngestService(req, res);
+        return this.inngestServe(req, res);
     }
 }
