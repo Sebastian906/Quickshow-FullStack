@@ -11,11 +11,13 @@ import { MovieController } from './movies/movie.controller';
 import { MovieModule } from './movies/movie.module';
 import { ShowController } from './shows/show.controller';
 import { ShowModule } from './shows/show.module';
+import { env } from 'process';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
     }),
     // Configuración de MongoDB
     MongooseModule.forRootAsync({

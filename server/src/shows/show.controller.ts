@@ -8,6 +8,11 @@ import { UpdateSeatsDto } from './dto/update-seats.dto';
 export class ShowController {
     constructor(private readonly showService: ShowService) { }
 
+    @Get('now-playing')
+    getNowPlayingMovies() {
+        return this.showService.getNowPlayingMovies();
+    }
+
     @Post()
     @HttpCode(HttpStatus.CREATED)
     create(@Body() createShowDto: CreateShowDto) {

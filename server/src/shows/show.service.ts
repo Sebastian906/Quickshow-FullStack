@@ -5,12 +5,53 @@ import { Model } from 'mongoose';
 import { CreateShowDto } from './dto/create-show.dto';
 import { UpdateShowDto } from './dto/update-show.dto';
 import { UpdateSeatsDto } from './dto/update-seats.dto';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class ShowService {
+
+    private readonly tmdbApiKey: string;
+    private readonly tmdbBaseUrl: string = 'https://api.themoviedb.org/3';
+
     constructor(
         @InjectModel(Show.name) private showModel: Model<ShowDocument>,
-    ) { }
+        private readonly httpService: HttpService,
+        private readonly configService: ConfigService,
+    ) { 
+        this.tmdbApiKey = this.configService.get<string>('TMDB_API_KEY') || '';;
+        if (!this.tmdbApiKey) {
+            console.warn('Warning: TMDB_API_KEY is not set in environment variables');
+        }
+    }
+
+    async getNowPlayingMovies() {
+        try {
+            if (!this.tmdbApiKey) {
+                throw new Error('TMDB_API_KEY is not configured');
+            }
+            const response = await firstValueFrom(
+                this.httpService.get(`${this.tmdbBaseUrl}/movie/now_playing`, {
+                    headers: {
+                        Authorization: `Bearer ${this.tmdbApiKey}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                }),
+            );
+            return {
+                success: true,
+                movies: response.data.results,
+            }
+        } catch (error) {
+            console.error('Error fetching now playing movies:', error);
+            return {
+                success: false,
+                message: error.response?.data?.status_message || error.message || 'Failed to fetch movies from TMDB',
+            }
+        }
+    }
 
     async create(createShowDto: CreateShowDto): Promise<Show> {
         const createdShow = new this.showModel(createShowDto);
