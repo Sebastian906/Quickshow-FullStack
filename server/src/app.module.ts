@@ -7,6 +7,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { getDatabaseConfig } from './configs/database.config';
 import { UsersModule } from './users/users.module';
 import { InngestModule } from './inngest/inngest.module';
+import { MovieController } from './movies/movie.controller';
+import { MovieModule } from './movies/movie.module';
+import { ShowController } from './shows/show.controller';
+import { ShowModule } from './shows/show.module';
 
 @Module({
   imports: [
@@ -21,8 +25,10 @@ import { InngestModule } from './inngest/inngest.module';
     }),
     UsersModule,
     InngestModule,
+    MovieModule,
+    ShowModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, MovieController, ShowController],
   providers: [AppService],
 })
 export class AppModule {}
