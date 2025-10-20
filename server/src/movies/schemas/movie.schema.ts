@@ -29,17 +29,17 @@ export class Movie {
     @Prop({ required: true })
     tagline: string;
 
-    @Prop({ required: true })
-    genres: string;
+    @Prop({ type: [Object], required: true })
+    genres: Array<{ id: number; name: string }>;
+
+    @Prop({ type: [Object], required: true })
+    casts: Array<any>;
 
     @Prop({ required: true })
-    casts: string;
+    vote_average: number;
 
     @Prop({ required: true })
-    vote_average: string;
-
-    @Prop({ required: true })
-    runtime: string;
+    runtime: number;
 }
 
 export const MovieSchema = SchemaFactory.createForClass(Movie);

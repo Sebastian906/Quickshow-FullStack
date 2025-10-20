@@ -8,6 +8,8 @@ import { UpdateSeatsDto } from './dto/update-seats.dto';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+import { AddShowDto } from './dto/add-show.dto';
+import { Movie, MovieDocument } from 'src/movies/schemas/movie.schema';
 
 @Injectable()
 export class ShowService {
@@ -17,6 +19,7 @@ export class ShowService {
 
     constructor(
         @InjectModel(Show.name) private showModel: Model<ShowDocument>,
+        @InjectModel(Movie.name) private movieModel: Model<MovieDocument>,
         private readonly httpService: HttpService,
         private readonly configService: ConfigService,
     ) { 
@@ -26,6 +29,7 @@ export class ShowService {
         }
     }
 
+    // API to get now playing movies from TMDB API
     async getNowPlayingMovies() {
         try {
             if (!this.tmdbApiKey) {
@@ -53,9 +57,85 @@ export class ShowService {
         }
     }
 
-    async create(createShowDto: CreateShowDto): Promise<Show> {
-        const createdShow = new this.showModel(createShowDto);
-        return createdShow.save();
+    // API to add a new show to the database
+    async addShow(addShowDto: AddShowDto): Promise<{ success: boolean; message: string }> {
+        try {
+            const { movieId, showsInput, showPrice } = addShowDto;
+            let movie = await this.movieModel.findById(movieId).exec();
+            if (!movie) {
+                // Fetch movie details and credits from TMDB API
+                if (!this.tmdbApiKey) {
+                    throw new Error('TMDB_API_KEY is not configured');
+                }
+                const [movieDetailsResponse, movieCreditsResponse] = await Promise.all([
+                    firstValueFrom(
+                        this.httpService.get(`${this.tmdbBaseUrl}/movie/${movieId}`, {
+                            headers: {
+                                Authorization: `Bearer ${this.tmdbApiKey}`,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                            },
+                        })
+                    ),
+                    firstValueFrom(
+                        this.httpService.get(`${this.tmdbBaseUrl}/movie/${movieId}/credits`, {
+                            headers: {
+                                Authorization: `Bearer ${this.tmdbApiKey}`,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                            },
+                        })
+                    ),
+                ]);
+                const movieApiData = movieDetailsResponse.data;
+                const movieCreditsData = movieCreditsResponse.data;
+                const movieDetails = {
+                    _id: movieId,
+                    title: movieApiData.title,
+                    overview: movieApiData.overview,
+                    poster_path: movieApiData.poster_path,
+                    backdrop_path: movieApiData.backdrop_path,
+                    genres: movieApiData.genres || [],
+                    casts: movieCreditsData.cast || [],
+                    release_date: movieApiData.release_date,
+                    original_language: movieApiData.original_language,
+                    tagline: movieApiData.tagline || "",
+                    vote_average: movieApiData.vote_average,
+                    runtime: movieApiData.runtime,
+                };
+                // Add movie to the database
+                movie = await this.movieModel.create(movieDetails);
+            }
+
+            const showsToCreate: Array<{
+                movie: string;
+                showDateTime: Date;
+                showPrice: number;
+                occupiedSeats: Record<string, any>;
+            }> = [];
+            
+            showsInput.forEach(show => {
+                const showDate = show.date;
+                show.time.forEach((time) => {
+                    const dateTimeString = `${showDate}T${time}`;
+                    showsToCreate.push({
+                        movie: movieId,
+                        showDateTime: new Date(dateTimeString),
+                        showPrice,
+                        occupiedSeats: {}
+                    });
+                });
+            });
+            if (showsToCreate.length > 0) {
+                await this.showModel.insertMany(showsToCreate);
+            }
+            return { success: true, message: 'Show added successfully.' };
+        } catch (error) {
+            console.error('Error adding show:', error);
+            throw new BadRequestException(
+                error.response?.data?.status_message || error.message || 'Failed to add show'
+            );
+        }
     }
 
     async findAll(): Promise<Show[]> {
@@ -118,34 +198,6 @@ export class ShowService {
     async update(id: string, updateShowDto: UpdateShowDto): Promise<Show> {
         const updatedShow = await this.showModel
             .findByIdAndUpdate(id, updateShowDto, { new: true })
-            .populate('movie')
-            .exec();
-
-        if (!updatedShow) {
-            throw new NotFoundException(`Show with ID ${id} not found`);
-        }
-
-        return updatedShow;
-    }
-
-    async updateSeats(id: string, updateSeatsDto: UpdateSeatsDto): Promise<Show> {
-        const show = await this.showModel.findById(id).exec();
-
-        if (!show) {
-            throw new NotFoundException(`Show with ID ${id} not found`);
-        }
-
-        const updatedSeats = {
-            ...show.occupiedSeats,
-            ...updateSeatsDto.occupiedSeats,
-        };
-
-        const updatedShow = await this.showModel
-            .findByIdAndUpdate(
-                id,
-                { occupiedSeats: updatedSeats },
-                { new: true },
-            )
             .populate('movie')
             .exec();
 

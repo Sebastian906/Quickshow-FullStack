@@ -3,6 +3,7 @@ import { ShowService } from './show.service';
 import { CreateShowDto } from './dto/create-show.dto';
 import { UpdateShowDto } from './dto/update-show.dto';
 import { UpdateSeatsDto } from './dto/update-seats.dto';
+import { AddShowDto } from './dto/add-show.dto';
 
 @Controller('shows')
 export class ShowController {
@@ -13,10 +14,10 @@ export class ShowController {
         return this.showService.getNowPlayingMovies();
     }
 
-    @Post()
-    @HttpCode(HttpStatus.CREATED)
-    create(@Body() createShowDto: CreateShowDto) {
-        return this.showService.create(createShowDto);
+    @Post('add')
+    @HttpCode(HttpStatus.OK)
+    addShow(@Body() addShowDto: AddShowDto) {
+        return this.showService.addShow(addShowDto);
     }
 
     @Get()
@@ -61,11 +62,6 @@ export class ShowController {
     @Patch(':id')
     update(@Param('id') id: string, @Body() updateShowDto: UpdateShowDto) {
         return this.showService.update(id, updateShowDto);
-    }
-
-    @Patch(':id/seats')
-    updateSeats(@Param('id') id: string, @Body() updateSeatsDto: UpdateSeatsDto) {
-        return this.showService.updateSeats(id, updateSeatsDto);
     }
 
     @Post(':id/book-seats')
