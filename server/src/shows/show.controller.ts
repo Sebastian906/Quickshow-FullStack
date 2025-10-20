@@ -1,9 +1,10 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ShowService } from './show.service';
 import { CreateShowDto } from './dto/create-show.dto';
 import { UpdateShowDto } from './dto/update-show.dto';
 import { UpdateSeatsDto } from './dto/update-seats.dto';
 import { AddShowDto } from './dto/add-show.dto';
+import { AdminGuard } from 'src/guards/admin/admin.guard';
 
 @Controller('shows')
 export class ShowController {
@@ -15,9 +16,20 @@ export class ShowController {
     }
 
     @Post('add')
+    @UseGuards(AdminGuard)
     @HttpCode(HttpStatus.OK)
     addShow(@Body() addShowDto: AddShowDto) {
         return this.showService.addShow(addShowDto);
+    }
+
+    @Get('all')
+    getAllShows() {
+        return this.showService.getShows();
+    }
+
+    @Get('movie/:movieId')
+    getShowByMovie(@Param('movieId') movieId: string) {
+        return this.showService.getShow(movieId);
     }
 
     @Get()

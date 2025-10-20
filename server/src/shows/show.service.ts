@@ -2,9 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import { Show, ShowDocument } from './schema/show.schema';
 import { Model } from 'mongoose';
-import { CreateShowDto } from './dto/create-show.dto';
 import { UpdateShowDto } from './dto/update-show.dto';
-import { UpdateSeatsDto } from './dto/update-seats.dto';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
@@ -137,6 +135,70 @@ export class ShowService {
             );
         }
     }
+
+    // API to get all shows from the database
+    async getShows(): Promise<{ success: boolean; shows: any[] }> {
+        try {
+            const shows = await this.showModel
+                .find({ showDateTime: { $gte: new Date() } })
+                .populate('movie')
+                .sort({ showDateTime: 1 })
+                .exec();
+            
+            // Filter unique shows by movie
+            const uniqueMovieMap = new Map();
+            shows.forEach(show => {
+                const movieId = show.movie['_id'] || show.movie;
+                if (!uniqueMovieMap.has(movieId.toString())) {
+                    uniqueMovieMap.set(movieId.toString(), show.movie);
+                }
+            });
+            return {
+                success: true,
+                shows: Array.from(uniqueMovieMap.values())
+            };
+        } catch (error) {
+            console.error('Error getting shows:', error);
+            throw new BadRequestException(error.message || 'Failed to get shows');
+        }
+    }
+
+    // API to get a single show from the database
+    async getShow(movieId: string): Promise<{ success: boolean; movie: any; dateTime: Record<string, any[]> }> {
+        try {
+            // Get all upcoming shows for the movie
+            const shows = await this.showModel
+                .find({ movie: movieId, showDateTime: { $gte: new Date() } })
+                .sort({ showDateTime: 1 })
+                .exec();
+            const movie = await this.movieModel.findById(movieId).exec();
+            if (!movie) {
+                throw new NotFoundException(`Movie with ID ${movieId} not found`);
+            }
+            const dateTime: Record<string, any[]> = {};
+            shows.forEach((show) => {
+                const date = show.showDateTime.toISOString().split("T")[0];
+                if (!dateTime[date]) {
+                    dateTime[date] = [];
+                }
+                dateTime[date].push({ 
+                    time: show.showDateTime, 
+                    showId: show._id 
+                });
+            });
+            return { 
+                success: true, 
+                movie, 
+                dateTime 
+            };
+        } catch (error) {
+            console.error('Error getting show:', error);
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new BadRequestException(error.message || 'Failed to get show');
+        }
+    } 
 
     async findAll(): Promise<Show[]> {
         return this.showModel.find().populate('movie').exec()
