@@ -12,6 +12,7 @@ import { MovieModule } from './movies/movie.module';
 import { ShowController } from './shows/show.controller';
 import { ShowModule } from './shows/show.module';
 import { env } from 'process';
+import { BookingModule } from './bookings/booking.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { env } from 'process';
     InngestModule,
     MovieModule,
     ShowModule,
+    BookingModule,
   ],
   controllers: [AppController, MovieController, ShowController],
   providers: [AppService],

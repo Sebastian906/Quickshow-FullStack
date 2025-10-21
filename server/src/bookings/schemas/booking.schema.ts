@@ -1,0 +1,27 @@
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document, Types } from "mongoose";
+
+export type BookingDocument = Booking & Document
+
+@Schema({ timestamps: true })
+export class Booking {
+    @Prop({ type: Types.ObjectId, required: true, ref: 'User' })
+    user: Types.ObjectId;
+
+    @Prop({ type: Types.ObjectId, required: true, ref: 'Show' })
+    show: Types.ObjectId;
+
+    @Prop({ type: Number, required: true })
+    amount: number;
+
+    @Prop({ type: [{ type: String }], required: true })
+    bookedSeats: string[];
+
+    @Prop({ type: Boolean, default: false })
+    isPaid: Boolean;
+
+    @Prop({ type: String })
+    paymentLink?: string;
+}
+
+export const BookingSchema = SchemaFactory.createForClass(Booking);
