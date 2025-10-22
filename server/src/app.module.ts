@@ -13,6 +13,9 @@ import { ShowController } from './shows/show.controller';
 import { ShowModule } from './shows/show.module';
 import { env } from 'process';
 import { BookingModule } from './bookings/booking.module';
+import { AdminService } from './admin/admin.service';
+import { AdminController } from './admin/admin.controller';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -31,6 +34,7 @@ import { BookingModule } from './bookings/booking.module';
     MovieModule,
     ShowModule,
     BookingModule,
+    AdminModule,
   ],
   controllers: [AppController, MovieController, ShowController],
   providers: [AppService],

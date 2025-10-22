@@ -12,6 +12,8 @@ async function bootstrap() {
     credentials: true
   });
 
+  app.setGlobalPrefix('api')
+
   app.use(clerkMiddleware());
 
   const port = process.env.PORT || 3000;
