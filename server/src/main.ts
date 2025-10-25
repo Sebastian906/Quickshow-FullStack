@@ -8,13 +8,19 @@ async function bootstrap() {
 
   // Habilitar CORS
   app.enableCors({
-    origin: process.env.FRONTEND_URL || true,
-    credentials: true
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   app.setGlobalPrefix('api')
 
-  app.use(clerkMiddleware());
+  app.use(clerkMiddleware({
+    secretKey: process.env.CLERK_SECRET_KEY,
+    publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
+    debug: true,
+  }));
 
   const port = process.env.PORT || 3000;
 

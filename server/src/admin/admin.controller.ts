@@ -13,6 +13,9 @@ export class AdminController {
 
     @Get('is-admin')
     isAdmin(): AdminCheckResponseDto {
+        console.log('isAdmin endpoint called - confirming admin access');
+        // Si llegamos aquí, significa que el AdminGuard permitió el acceso
+        // por lo tanto el usuario es admin
         return { success: true, isAdmin: true }
     }
 

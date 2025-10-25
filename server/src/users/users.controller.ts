@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Request, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './schemas/user.schema';
 import { AdminGuard } from 'src/guards/admin/admin.guard';
@@ -20,6 +20,33 @@ export class UsersController {
         return this.usersService.findAll()
     }
 
+    @Get('bookings')
+    async getUserBookings(@Request() req: any) {
+        const auth = await req.auth();
+        const userId = auth?.userId;
+        if (!userId) throw new UnauthorizedException('User not authenticated');
+        return this.usersService.getUserBookings(userId);
+    }
+
+    @Get('favorites')
+    async getFavorites(@Request() req: any) {
+        const auth = await req.auth();
+        const userId = auth?.userId;
+        if (!userId) throw new UnauthorizedException('User not authenticated');
+        return this.usersService.getFavorites(userId);
+    }
+
+    @Post('update-favorite')
+    async updateFavorite(
+        @Body() updateFavoriteDto: UpdateFavoriteDto,
+        @Request() req: any,
+    ) {
+        const auth = await req.auth();
+        const userId = auth?.userId;
+        if (!userId) throw new UnauthorizedException('User not authenticated');
+        return this.usersService.updateFavorite(userId, updateFavoriteDto.movieId);
+    }
+
     @Get(':id')
     async findOne(@Param('id') id: string) {
         return this.usersService.findById(id);
@@ -34,29 +61,5 @@ export class UsersController {
     @HttpCode(HttpStatus.NO_CONTENT)
     async remove(@Param('id') id: string) {
         return this.usersService.delete(id);
-    }
-
-    @Get('bookings')
-    //@UseGuards(AdminGuard)
-    async getUserBookings(@Request() req: any) {
-        const userId = req.auth?.userId || req.user?.id || 'temp-user-id';
-        return this.usersService.getUserBookings(userId);
-    }
-
-    @Post('update-favorite')
-    //@UseGuards(AdminGuard)
-    async updateFavorite(
-        @Body() updateFavoriteDto: UpdateFavoriteDto,
-        @Request() req: any,
-    ) {
-        const userId = req.auth?.userId || req.user?.id || 'temp-user-id'
-        return this.usersService.updateFavorite(userId, updateFavoriteDto.movieId);
-    }
-
-    @Get('favorites')
-    //@UseGuards(AdminGuard)
-    async getFavorites(@Request() req: any) {
-        const userId = req.auth?.userId || req.user?.id || 'temp-user-id'
-        return this.usersService.getFavorites(userId);
     }
 }

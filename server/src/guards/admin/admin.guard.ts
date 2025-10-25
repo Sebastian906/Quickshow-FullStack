@@ -6,17 +6,29 @@ export class AdminGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     try {
-      if (!request.auth) {
-        throw new UnauthorizedException('Authentication middleware not configured');
+      const authHeader = request.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new UnauthorizedException('Missing or invalid authorization header');
       }
-      const { userId } = request.auth;
+      
+      const auth = await request.auth();
+      if (!auth) {
+        throw new UnauthorizedException('Authentication failed');
+      }
+      
+      const { userId } = auth;
       if (!userId) {
         throw new UnauthorizedException('Not Authorized');
       }
       const user = await clerkClient.users.getUser(userId);
-      if (user.privateMetadata?.role !== 'admin') {
+      console.log('User metadata:', user.privateMetadata);
+      
+      if (!user.privateMetadata || user.privateMetadata.role !== 'admin') {
+        console.log('User is not admin. Role:', user.privateMetadata?.role);
         throw new UnauthorizedException('Not Authorized - Admin access required');
       }
+      
+      console.log('User is admin');
       request.user = user;
       return true;
     } catch (error) {
