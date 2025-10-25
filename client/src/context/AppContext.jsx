@@ -10,6 +10,7 @@ export const AppContext = createContext()
 
 export const AppProvider = ({ children }) => {
     const [isAdmin, setIsAdmin] = useState(false)
+    const [isAdminLoading, setIsAdminLoading] = useState(true)
     const [shows, setShows] = useState([])
     const [favoriteMovies, setFavoriteMovies] = useState([])
 
@@ -19,17 +20,44 @@ export const AppProvider = ({ children }) => {
     const navigate = useNavigate()
 
     const fetchIsAdmin = async () => {
+        setIsAdminLoading(true);
         try {
-            const { data } = await axios.get('/api/admin/is-admin', { headers: 
-                { Authorization: `Bearer ${await getToken()}` } 
-            })
-            setIsAdmin(data.isAdmin)
-            if (!data.isAdmin && location.pathname.startsWith('/admin')) {
-                navigate('/')
-                toast.error('You are not authorized to access admin dashboard')
+            // Si no hay usuario, no es admin
+            if (!user) {
+                console.log('No user logged in');
+                setIsAdmin(false);
+                return;
+            }
+
+            const token = await getToken();
+            if (!token) {
+                console.log('No authentication token available');
+                setIsAdmin(false);
+                return;
+            }
+
+            console.log('Checking admin status...');
+            const { data } = await axios.get('/api/admin/is-admin', { 
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('Admin check response:', data);
+            
+            if (data.success && data.isAdmin) {
+                console.log('User confirmed as admin');
+                setIsAdmin(true);
+            } else {
+                console.log('User is not admin');
+                setIsAdmin(false);
             }
         } catch (error) {
-            console.log(error);
+            console.log('Admin check error:', error.response?.data || error.message);
+            setIsAdmin(false);
+        } finally {
+            setIsAdminLoading(false);
         }
     }
 
@@ -48,31 +76,58 @@ export const AppProvider = ({ children }) => {
 
     const fetchFavoriteMovies = async () => {
         try {
-            const { data } = await axios.get('/api/user/favorites', { headers: 
-                { Authorization: `Bearer ${await getToken()}` }
-            })
+            const token = await getToken();
+            if (!token) {
+                console.log('No authentication token available');
+                return;
+            }
+            const { data } = await axios.get('/api/user/favorites', { 
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
             if (data.success) {
                 setFavoriteMovies(data.movies)
             } else {
                 toast.error(data.message)
             }
         } catch (error) {
-            console.log(error);
+            console.log('Favorites fetch error:', error.response?.data || error.message);
         }
     }
 
     useEffect(() => {
         fetchShows()
-    })
+    }, [])
 
     useEffect(() => {
-        if (user) {
-            fetchIsAdmin()
-            fetchFavoriteMovies()
-        }
+        const initializeUser = async () => {
+            if (user) {
+                console.log('User metadata:', user.privateMetadata);
+                await fetchIsAdmin();
+                await fetchFavoriteMovies();
+            } else {
+                setIsAdmin(false);
+            }
+        };
+        
+        initializeUser();
     }, [user])
 
-    const value = { axios }
+    const value = { 
+        axios,
+        fetchIsAdmin,
+        user, 
+        getToken, 
+        navigate, 
+        isAdmin,
+        isAdminLoading, 
+        shows, 
+        favoriteMovies, 
+        fetchFavoriteMovies
+    }
+    
     return (
         <AppContext.Provider value={value}>
             {children}
