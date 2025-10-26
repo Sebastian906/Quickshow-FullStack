@@ -14,6 +14,8 @@ export const AppProvider = ({ children }) => {
     const [shows, setShows] = useState([])
     const [favoriteMovies, setFavoriteMovies] = useState([])
 
+    const image_base_url = import.meta.env.VITE_TMDB_IMAGE_BASE_URL;
+
     const { user } = useUser()
     const { getToken } = useAuth()
     const location = useLocation()
@@ -125,7 +127,8 @@ export const AppProvider = ({ children }) => {
         isAdminLoading, 
         shows, 
         favoriteMovies, 
-        fetchFavoriteMovies
+        fetchFavoriteMovies,
+        image_base_url
     }
     
     return (
