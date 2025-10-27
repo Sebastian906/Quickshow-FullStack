@@ -5,6 +5,7 @@ import Title from "../../components/admin/Title";
 import { CheckIcon, DeleteIcon, StarIcon } from 'lucide-react'
 import { kConverter } from "../../lib/kConverter";
 import { useAppContext } from "../../context/AppContext";
+import toast from "react-hot-toast";
 
 const AddShows = () => {
 
@@ -16,6 +17,7 @@ const AddShows = () => {
     const [dateTimeSelection, setDateTimeSelection] = useState({});
     const [dateTimeInput, setDateTimeInput] = useState("");
     const [showPrice, setShowPrice] = useState("");
+    const [addingShow, setAddingShow] = useState(false);
 
     const fetchNowPlayingMovies = async () => {
         try {
@@ -58,6 +60,36 @@ const AddShows = () => {
         });
     }
 
+    const handleSubmit = async () => {
+        try {
+            setAddingShow(true)
+            if (!selectedMovie || Object.keys(dateTimeSelection).length === 0 || !showPrice) {
+                return toast('Missing required fields');
+            }
+            const showsInput = Object.entries(dateTimeSelection).map(([date, time]) => ({date, time}));
+            const payload = {
+                movieId: selectedMovie,
+                showsInput,
+                showPrice: Number(showPrice)
+            }
+            const { data } = await axios.post('/api/shows/add', payload, {
+                headers: { Authorization: `Bearer ${await getToken()}` }
+            })
+            if (data.success) {
+                toast.success(data.message)
+                setSelectedMovie(null)
+                setDateTimeSelection({})
+                setShowPrice("")
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.error('Submission error:', error);
+            toast.error('An error ocurred. Please try again.')
+        }
+        setAddingShow(false)
+    }
+
     useEffect(() => {
         if (user) {
             fetchNowPlayingMovies();
@@ -96,6 +128,7 @@ const AddShows = () => {
                                 </div>
                             )}
                             <p className="font-medium truncate">{movie.title}</p>
+                            <p className="text-gray-400 text-sm">{movie.release_date}</p>
                         </div>
                     ))}
                 </div>
@@ -165,6 +198,8 @@ const AddShows = () => {
                 </div>
             )}
             <button
+                onClick={handleSubmit}
+                disabled={addingShow}
                 className="bg-primary text-white px-8 py-2 mt-6 rounded hover:bg-primary/90 transition-all cursor-pointer"
             >
                 Add Show
