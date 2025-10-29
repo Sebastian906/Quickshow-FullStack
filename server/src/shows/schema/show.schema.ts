@@ -6,7 +6,7 @@ export type ShowDocument = Show & Document
 @Schema({ minimize: false, timestamps: true })
 export class Show {
     @Prop({ type: String, required: true, ref: 'Movie' })
-    movie: String;
+    movie: string;
 
     @Prop({ type: Date, required: true })
     showDateTime: Date;

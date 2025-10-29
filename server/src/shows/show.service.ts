@@ -205,7 +205,8 @@ export class ShowService {
     }
 
     async findOne(id: string): Promise<Show> {
-        const show = await this.showModel.findById(id).populate('movie').exec()
+        const show = await this.showModel.findOne({ movie: id }).populate('movie').exec();
+        
         if (!show) {
             throw new NotFoundException(`Show with ID ${id} not found`);
         }
@@ -259,7 +260,7 @@ export class ShowService {
 
     async update(id: string, updateShowDto: UpdateShowDto): Promise<Show> {
         const updatedShow = await this.showModel
-            .findByIdAndUpdate(id, updateShowDto, { new: true })
+            .findOneAndUpdate({ movie: id }, updateShowDto, { new: true })
             .populate('movie')
             .exec();
 
@@ -271,7 +272,7 @@ export class ShowService {
     }
 
     async bookSeats(id: string, seats: string[]): Promise<Show> {
-        const show = await this.showModel.findById(id).exec();
+        const show = await this.showModel.findOne({ movie: id }).exec();
 
         if (!show) {
             throw new NotFoundException(`Show with ID ${id} not found`);
@@ -293,8 +294,8 @@ export class ShowService {
         });
 
         const updatedShow = await this.showModel
-            .findByIdAndUpdate(
-                id,
+            .findOneAndUpdate(
+                { movie: id },
                 { occupiedSeats: updatedSeats },
                 { new: true },
             )
@@ -309,7 +310,7 @@ export class ShowService {
     }
 
     async releaseSeats(id: string, seats: string[]): Promise<Show> {
-        const show = await this.showModel.findById(id).exec();
+        const show = await this.showModel.findOne({ movie: id }).exec();
 
         if (!show) {
             throw new NotFoundException(`Show with ID ${id} not found`);
@@ -321,8 +322,8 @@ export class ShowService {
         });
 
         const updatedShow = await this.showModel
-            .findByIdAndUpdate(
-                id,
+            .findOneAndUpdate(
+                { movie: id },
                 { occupiedSeats: updatedSeats },
                 { new: true },
             )
@@ -340,7 +341,7 @@ export class ShowService {
         id: string,
         seats: string[],
     ): Promise<{ available: boolean; unavailableSeats: string[] }> {
-        const show = await this.showModel.findById(id).exec();
+        const show = await this.showModel.findOne({ movie: id }).exec();
 
         if (!show) {
             throw new NotFoundException(`Show with ID ${id} not found`);
@@ -357,7 +358,7 @@ export class ShowService {
     }
 
     async getOccupiedSeatsCount(id: string): Promise<number> {
-        const show = await this.showModel.findById(id).exec();
+        const show = await this.showModel.findOne({ movie: id }).exec();
 
         if (!show) {
             throw new NotFoundException(`Show with ID ${id} not found`);
@@ -369,7 +370,7 @@ export class ShowService {
     }
 
     async remove(id: string): Promise<Show> {
-        const deletedShow = await this.showModel.findByIdAndDelete(id).exec();
+        const deletedShow = await this.showModel.findOneAndDelete({ movie: id }).exec();
 
         if (!deletedShow) {
             throw new NotFoundException(`Show with ID ${id} not found`);
