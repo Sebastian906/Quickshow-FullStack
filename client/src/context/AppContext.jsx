@@ -38,21 +38,16 @@ export const AppProvider = ({ children }) => {
                 return;
             }
 
-            console.log('Checking admin status...');
             const { data } = await axios.get('/api/admin/is-admin', { 
                 headers: { 
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
-
-            console.log('Admin check response:', data);
             
             if (data.success && data.isAdmin) {
-                console.log('User confirmed as admin');
                 setIsAdmin(true);
             } else {
-                console.log('User is not admin');
                 setIsAdmin(false);
             }
         } catch (error) {
@@ -106,7 +101,6 @@ export const AppProvider = ({ children }) => {
     useEffect(() => {
         const initializeUser = async () => {
             if (user) {
-                console.log('User metadata:', user.privateMetadata);
                 await fetchIsAdmin();
                 await fetchFavoriteMovies();
             } else {
