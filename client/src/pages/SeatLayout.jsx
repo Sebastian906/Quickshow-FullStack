@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { assets, dummyDateTimeData, dummyShowsData } from "../assets/assets"
+import { assets } from "../assets/assets"
 import Loading from "../components/Loading"
 import { ArrowRightIcon, ClockIcon } from "lucide-react"
 import isoTimeFormat from "../lib/isoTimeFormat"
 import BlurCircle from "../components/BlurCircle"
 import toast from 'react-hot-toast'
+import { useAppContext } from "../context/AppContext"
 
 const SeatLayout = () => {
 
@@ -18,13 +19,16 @@ const SeatLayout = () => {
 
     const navigate = useNavigate()
 
+    const { axios, getToken, user } = useAppContext()
+
     const getShow = async () => {
-        const show = dummyShowsData.find(show => show._id === id)
-        if (show) {
-            setShow({
-                movie: show,
-                dateTime: dummyDateTimeData
-            })
+        try {
+            const { data } = await axios.get(`/api/shows/movie/${id}`)
+            if (data.success) {
+                setShow(data)
+            }
+        } catch (error) {
+            console.log(error);
         }
     }
 
