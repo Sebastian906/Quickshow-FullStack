@@ -16,6 +16,7 @@ const SeatLayout = () => {
     const [selectedSeats, setSelectedSeats] = useState([])
     const [selectedTime, setSelectedTime] = useState(null)
     const [show, setShow] = useState(null)
+    const [occupiedSeats, setOccupiedSeats] = useState([])
 
     const navigate = useNavigate()
 
@@ -25,7 +26,19 @@ const SeatLayout = () => {
         try {
             const { data } = await axios.get(`/api/shows/movie/${id}`)
             if (data.success) {
-                setShow(data)
+                const normalized = { ...data };
+                if (normalized.dateTime) {
+                    const mapped = {};
+                    Object.keys(normalized.dateTime).forEach((d) => {
+                        mapped[d] = normalized.dateTime[d].map(item => ({
+                            ...item,
+                            showId: item.showId ? String(item.showId).trim() : item.showId
+                        }))
+                    })
+                    normalized.dateTime = mapped;
+                }
+                setShow(normalized)
+                console.log('Normalized show data:', normalized)
             }
         } catch (error) {
             console.log(error);
@@ -38,6 +51,9 @@ const SeatLayout = () => {
         }
         if (!selectedSeats.includes(seatId) && selectedSeats.length > 4) {
             return toast("You can only select 5 seats")
+        }
+        if (occupiedSeats.includes(seatId)) {
+            return toast("This seat is already booked")
         }
         setSelectedSeats(prev => prev.includes(seatId) ? prev.filter(seat => seat !== seatId) : [...prev, seatId])
     }
@@ -54,7 +70,7 @@ const SeatLayout = () => {
                         <button
                             key={seatId}
                             onClick={() => handleSeatClick(seatId)}
-                            className={`h-8 w-8 rounded border border-primary/60 cursor-pointer ${selectedSeats.includes(seatId) && "bg-primary text-white"}`}
+                            className={`h-8 w-8 rounded border border-primary/60 cursor-pointer ${selectedSeats.includes(seatId) && "bg-primary text-white"} ${occupiedSeats.includes(seatId) && "opacity-50"}`}
                         >
                             {seatId}
                         </button>
@@ -64,9 +80,87 @@ const SeatLayout = () => {
         </div>
     )
 
+    const getOccupiedSeats = async () => {
+        try {
+            if (!selectedTime || !selectedTime.showId) {
+                console.log('getOccupiedSeats: missing selectedTime or showId', selectedTime);
+                return;
+            }
+
+            const { data } = await axios.get(`/api/booking/seats/${selectedTime.showId}`, {
+                params: { time: selectedTime.time }
+            });
+            if (data.success) {
+                setOccupiedSeats(data.occupiedSeats)
+                return data.occupiedSeats
+            } else {
+                toast.error(data.message)
+                return []
+            }
+        } catch (error) {
+            console.log('Error getting occupied seats:', error);
+            return []
+        }
+    }
+
+    const bookTickets = async () => {
+        try {
+            if (!user) return toast.error('Please login to proceed')
+            if (!selectedTime || !selectedSeats.length) return toast.error('Please select a time and seats');
+            if (!selectedTime.showId) return toast.error('Invalid show selected. Please choose a time again.')
+            
+            const currentOccupied = await getOccupiedSeats()
+            const conflicts = selectedSeats.filter(s => currentOccupied.includes(s))
+            if (conflicts.length > 0) {
+                return toast.error(`Selected seats not available: ${conflicts.join(', ')}`)
+            }
+
+            // Validate showId looks like a MongoDB ObjectId
+            const showIdStr = String(selectedTime.showId).trim().toLowerCase()
+            console.log('Booking payload showId:', showIdStr, 'length:', showIdStr.length)
+            if (showIdStr.length !== 24 || !/^[0-9a-f]{24}$/.test(showIdStr)) {
+                console.error('Invalid showId format:', {
+                    original: selectedTime.showId,
+                    cleaned: showIdStr,
+                    length: showIdStr.length
+                })
+                return toast.error('Invalid show id. Please go back and reselect the schedule.')
+            }
+
+            const payload = {
+                showId: showIdStr,
+                //time: selectedTime.time,
+                selectedSeats
+            }
+
+            console.log('Final payload:', payload)
+
+            const { data } = await axios.post('/api/booking/create', payload, {
+                headers: { Authorization: `Bearer ${await getToken()}` }
+            })
+
+            if (data.success) {
+                toast.success(data.message)
+                navigate('/my-bookings')
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.error('Booking error:', error)
+            const msg = error?.response?.data?.message || error?.message || 'Failed to create booking'
+            toast.error(msg)
+        }
+    }
+
     useEffect(() => {
         getShow()
     }, [])
+
+    useEffect(() => {
+        if (selectedTime) {
+            getOccupiedSeats()
+        }
+    }, [selectedTime])
 
     return show ? (
         <div className="flex flex-col md:flex-row px-6 md:px-16 lg:px-40 py-30 md:pt-50">
@@ -77,6 +171,7 @@ const SeatLayout = () => {
                     {show.dateTime[date].map((item) => (
                         <div
                             key={item.time}
+                            // item already contains the DB showId (see backend). Use it directly.
                             onClick={() => setSelectedTime(item)}
                             className={`flex items-center gap-2 px-6 py-2 w-max rounded-r-md cursor-pointer transition-all ${selectedTime?.time === item.time ? "bg-primary text-white" : "hover:bg-primary/20"}`}
                         >
@@ -107,7 +202,7 @@ const SeatLayout = () => {
                     </div>
                 </div>
                 <button 
-                    onClick={() => navigate('/my-bookings')}
+                    onClick={bookTickets}
                     className="flex items-center gap-1 mt-20 px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer active:scale-95"
                 >
                     Proceed to Checkout
