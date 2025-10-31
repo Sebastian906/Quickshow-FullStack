@@ -14,10 +14,20 @@ export class BookingService {
 
     private async checkSeatsAvailability(showId: string, selectedSeats: string[]): Promise<boolean> {
         try {
-            const showData = await this.showModel.findById(showId);
-            if (!showData) {
+            showId = showId.trim();
+            if (!Types.ObjectId.isValid(showId)) {
+                console.error('Invalid showId in checkSeatsAvailability:', showId);
                 return false;
             }
+
+            const objectId = new Types.ObjectId(showId);
+            const showData = await this.showModel.findById(objectId);
+            
+            if (!showData) {
+                console.error('Show not found in checkSeatsAvailability:', showId);
+                return false;
+            }
+            
             const occupiedSeats = showData.occupiedSeats;
             const isAnySeatTaken = selectedSeats.some(
                 (seat) => occupiedSeats[seat]
@@ -25,26 +35,47 @@ export class BookingService {
             return !isAnySeatTaken;
         } catch (error) {
             console.error('Error checking seats availability:', error.message);
+            console.error('Stack:', error.stack);
             return false;
         }
     }
 
     async createBooking(userId: string, createBookingDto: CreateBookingDto): Promise<{ success: boolean; message: string }> {
         try {
-            const { showId, selectedSeats } = createBookingDto;
-            // Check if the seat is available for the selected show
+            let { showId, selectedSeats } = createBookingDto;
+            console.log('=== CREATE BOOKING SERVICE DEBUG ===');
+            console.log('Original showId:', showId);
+            console.log('Original showId length:', showId?.length);
+
+            showId = showId.trim();
+            
+            if (!Types.ObjectId.isValid(showId)) {
+                console.error('Invalid showId');
+                throw new BadRequestException(`Invalid show ID format`);
+            }
+
+            if (!Types.ObjectId.isValid(userId)) {
+                console.error('Invalid userId:', userId);
+                throw new BadRequestException('User not authenticated or invalid user ID');
+            }
+
+            console.log('showId and userId validation passed');
+
+            const showObjectId = new Types.ObjectId(showId);
+            const userObjectId = new Types.ObjectId(userId);
+            
             const isAvailable = await this.checkSeatsAvailability(showId, selectedSeats);
             if (!isAvailable) {
                 throw new BadRequestException('Selected seats are not available.');
             }
-            // GGet the show details
+            
             const showData = await this.showModel
-                .findById(showId)
+                .findById(showObjectId)
                 .populate('movie');
             if (!showData) {
                 throw new NotFoundException('Show not found.');
             }
-            // Create a new booking
+
             const bookingData: {
                 user: Types.ObjectId;
                 show: Types.ObjectId;
@@ -52,30 +83,50 @@ export class BookingService {
                 bookedSeats: string[];
                 isPaid: boolean;
             } = {
-                user: new Types.ObjectId(userId),
-                show: new Types.ObjectId(showId),
+                user: userObjectId,
+                show: showObjectId,
                 amount: showData.showPrice * selectedSeats.length,
                 bookedSeats: selectedSeats,
                 isPaid: false,
             };
+
             const booking = await this.bookingModel.create(bookingData);
+
             selectedSeats.forEach((seat) => {
-                showData.occupiedSeats[seat] = userId;
+                showData.occupiedSeats[seat] = userObjectId.toString(); 
             });
+
             showData.markModified('occupiedSeats');
             await showData.save();
+            
             return { success: true, message: 'Booked successfully' };
         } catch (error) {
             console.error('Error creating booking:', error.message);
+            console.error('Error name:', error.name);
+            
             if (error instanceof BadRequestException || error instanceof NotFoundException) {
                 throw error;
             }
+
+            if (error.name === 'BSONError' || error.message.includes('ObjectId')) {
+                throw new BadRequestException('Invalid show ID format');
+            }
+
             throw new BadRequestException('Failed to create booking');
         }
     }
 
     async getOccupiedSeats(showId: string): Promise<{ success: boolean; message?: string; occupiedSeats?: string[] }> {
         try {
+            console.log('=== GET OCCUPIED SEATS SERVICE DEBUG ===');
+            console.log('Original showId:', showId);
+            showId = showId.trim();
+            console.log('Cleaned showId:', showId);
+            if (!Types.ObjectId.isValid(showId)) {
+                console.error('Invalid showId format');
+                throw new BadRequestException('Invalid show ID format');
+            }
+            console.log('showId is valid');
             const showData = await this.showModel.findById(showId);
             if (!showData) {
                 throw new NotFoundException('Show not found.');
