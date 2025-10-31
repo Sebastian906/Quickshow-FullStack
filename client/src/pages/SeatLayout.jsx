@@ -38,7 +38,6 @@ const SeatLayout = () => {
                     normalized.dateTime = mapped;
                 }
                 setShow(normalized)
-                console.log('Normalized show data:', normalized)
             }
         } catch (error) {
             console.log(error);
@@ -115,7 +114,6 @@ const SeatLayout = () => {
                 return toast.error(`Selected seats not available: ${conflicts.join(', ')}`)
             }
 
-            // Validate showId looks like a MongoDB ObjectId
             const showIdStr = String(selectedTime.showId).trim().toLowerCase()
             console.log('Booking payload showId:', showIdStr, 'length:', showIdStr.length)
             if (showIdStr.length !== 24 || !/^[0-9a-f]{24}$/.test(showIdStr)) {
@@ -129,11 +127,8 @@ const SeatLayout = () => {
 
             const payload = {
                 showId: showIdStr,
-                //time: selectedTime.time,
                 selectedSeats
             }
-
-            console.log('Final payload:', payload)
 
             const { data } = await axios.post('/api/booking/create', payload, {
                 headers: { Authorization: `Bearer ${await getToken()}` }
