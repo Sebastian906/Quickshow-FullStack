@@ -271,7 +271,7 @@ export class ShowService {
         return updatedShow;
     }
 
-    async bookSeats(id: string, seats: string[]): Promise<Show> {
+    async bookSeats(id: string, seats: string[], userId: string): Promise<Show> {
         const show = await this.showModel.findOne({ movie: id }).exec();
 
         if (!show) {
@@ -279,7 +279,7 @@ export class ShowService {
         }
 
         const unavailableSeats = seats.filter(
-            (seat) => show.occupiedSeats[seat] === true,
+            (seat) => show.occupiedSeats[seat] !== undefined && show.occupiedSeats[seat] !== null,
         );
 
         if (unavailableSeats.length > 0) {
@@ -290,7 +290,7 @@ export class ShowService {
 
         const updatedSeats = { ...show.occupiedSeats };
         seats.forEach((seat) => {
-            updatedSeats[seat] = true;
+            updatedSeats[seat] = userId;
         });
 
         const updatedShow = await this.showModel
@@ -348,7 +348,7 @@ export class ShowService {
         }
 
         const unavailableSeats = seats.filter(
-            (seat) => show.occupiedSeats[seat] === true,
+            (seat) => show.occupiedSeats[seat] !== undefined && show.occupiedSeats[seat] !== null,
         );
 
         return {
@@ -365,7 +365,7 @@ export class ShowService {
         }
 
         return Object.keys(show.occupiedSeats).filter(
-            (key) => show.occupiedSeats[key] === true,
+            (key) => show.occupiedSeats[key] !== undefined && show.occupiedSeats[key] !== null,
         ).length;
     }
 

@@ -1,36 +1,30 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Request } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { ClerkAuthGuard } from 'src/guards/clerk-auth/clerk-auth.guard';
 
 @Controller('booking')
 export class BookingController {
     constructor(private readonly bookingService: BookingService) { }
 
     @Post('create')
+    @UseGuards(ClerkAuthGuard)
     async createBooking(
         @Body() createBookingDto: CreateBookingDto,
         @Request() req: any
     ) {
-        console.log('=== BOOKING CONTROLLER DEBUG ===');
-        console.log('req.user:', req.user);
-        console.log('userId candidates:', {
-            'req.user?.id': req.user?.id,
-            'req.user?._id': req.user?._id,
-            'req.user?.userId': req.user?.userId,
-        });
-        const userId = req.user?.id || req.user?._id || req.user?.userId;
+        const userId = req.auth?.userId || req.user?.id || req.user?.sub;
+
         if (!userId) {
+            console.error('Authentication failed - no userId found');
             throw new BadRequestException('User not authenticated. Please login.');
         }
+        
         return this.bookingService.createBooking(userId, createBookingDto);
     }
 
     @Get('seats/:showId')
     async getOccupiedSeats(@Param('showId') showId: string) {
-        console.log('=== GET OCCUPIED SEATS DEBUG ===');
-        console.log('showId:', showId);
-        console.log('showId length:', showId.length);
-        console.log('================================');
         return this.bookingService.getOccupiedSeats(showId);
     }
 }

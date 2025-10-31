@@ -35,18 +35,14 @@ export class BookingService {
             return !isAnySeatTaken;
         } catch (error) {
             console.error('Error checking seats availability:', error.message);
-            console.error('Stack:', error.stack);
             return false;
         }
     }
 
-    async createBooking(userId: string, createBookingDto: CreateBookingDto): Promise<{ success: boolean; message: string }> {
+    async createBooking(clerkUserId: string, createBookingDto: CreateBookingDto): Promise<{ success: boolean; message: string }> {
         try {
             let { showId, selectedSeats } = createBookingDto;
-            console.log('=== CREATE BOOKING SERVICE DEBUG ===');
-            console.log('Original showId:', showId);
-            console.log('Original showId length:', showId?.length);
-
+            
             showId = showId.trim();
             
             if (!Types.ObjectId.isValid(showId)) {
@@ -54,15 +50,7 @@ export class BookingService {
                 throw new BadRequestException(`Invalid show ID format`);
             }
 
-            if (!Types.ObjectId.isValid(userId)) {
-                console.error('Invalid userId:', userId);
-                throw new BadRequestException('User not authenticated or invalid user ID');
-            }
-
-            console.log('showId and userId validation passed');
-
             const showObjectId = new Types.ObjectId(showId);
-            const userObjectId = new Types.ObjectId(userId);
             
             const isAvailable = await this.checkSeatsAvailability(showId, selectedSeats);
             if (!isAvailable) {
@@ -75,15 +63,9 @@ export class BookingService {
             if (!showData) {
                 throw new NotFoundException('Show not found.');
             }
-
-            const bookingData: {
-                user: Types.ObjectId;
-                show: Types.ObjectId;
-                amount: number;
-                bookedSeats: string[];
-                isPaid: boolean;
-            } = {
-                user: userObjectId,
+            
+            const bookingData = {
+                user: clerkUserId, // Guardar el Clerk userId como string
                 show: showObjectId,
                 amount: showData.showPrice * selectedSeats.length,
                 bookedSeats: selectedSeats,
@@ -91,9 +73,10 @@ export class BookingService {
             };
 
             const booking = await this.bookingModel.create(bookingData);
+            console.log('Booking created:', booking._id);
 
             selectedSeats.forEach((seat) => {
-                showData.occupiedSeats[seat] = userObjectId.toString(); 
+                showData.occupiedSeats[seat] = clerkUserId; // Guardar Clerk userId
             });
 
             showData.markModified('occupiedSeats');
@@ -108,25 +91,17 @@ export class BookingService {
                 throw error;
             }
 
-            if (error.name === 'BSONError' || error.message.includes('ObjectId')) {
-                throw new BadRequestException('Invalid show ID format');
-            }
-
             throw new BadRequestException('Failed to create booking');
         }
     }
 
     async getOccupiedSeats(showId: string): Promise<{ success: boolean; message?: string; occupiedSeats?: string[] }> {
         try {
-            console.log('=== GET OCCUPIED SEATS SERVICE DEBUG ===');
-            console.log('Original showId:', showId);
             showId = showId.trim();
-            console.log('Cleaned showId:', showId);
             if (!Types.ObjectId.isValid(showId)) {
                 console.error('Invalid showId format');
                 throw new BadRequestException('Invalid show ID format');
             }
-            console.log('showId is valid');
             const showData = await this.showModel.findById(showId);
             if (!showData) {
                 throw new NotFoundException('Show not found.');

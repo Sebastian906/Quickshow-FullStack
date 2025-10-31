@@ -15,7 +15,7 @@ export class Show {
     showPrice: number;
 
     @Prop({ type: Object, default: {} })
-    occupiedSeats: Record<string, any>;
+    occupiedSeats: Record<string, string>;
 }
 
 export const ShowSchema = SchemaFactory.createForClass(Show);

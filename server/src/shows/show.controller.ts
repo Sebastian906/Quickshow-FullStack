@@ -1,8 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { ShowService } from './show.service';
-import { CreateShowDto } from './dto/create-show.dto';
 import { UpdateShowDto } from './dto/update-show.dto';
-import { UpdateSeatsDto } from './dto/update-seats.dto';
 import { AddShowDto } from './dto/add-show.dto';
 import { AdminGuard } from 'src/guards/admin/admin.guard';
 
@@ -77,8 +75,16 @@ export class ShowController {
     }
 
     @Post(':id/book-seats')
-    bookSeats(@Param('id') id: string, @Body('seats') seats: string[]) {
-        return this.showService.bookSeats(id, seats);
+    bookSeats(
+        @Param('id') id: string, 
+        @Body('seats') seats: string[],
+        @Request() req: any
+    ) {
+        const userId = req.user?.userId || req.user?.id;
+        if (!userId) {
+            throw new BadRequestException('User not authenticated');
+        }
+        return this.showService.bookSeats(id, seats, userId);
     }
 
     @Post(':id/release-seats')
