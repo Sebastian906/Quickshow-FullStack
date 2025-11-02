@@ -6,6 +6,7 @@ import { clerkMiddleware } from '@clerk/express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     rawBody: true, 
+    logger: ['error', 'warn', 'log'],
   });
 
   // Habilitar CORS
@@ -29,9 +30,16 @@ async function bootstrap() {
   }));
 
   const port = process.env.PORT || 3000;
+  const host = '0.0.0.0'; // CRÍTICO para Render
 
-  await app.listen(port, '0.0.0.0');
-  console.log(`Server listening at http://localhost:${port}`)
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
+  await app.listen(port, host);
+  
+  console.log(`Server running on http://${host}:${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`API available at http://${host}:${port}/api`);
 }
-bootstrap();
+
+bootstrap().catch(err => {
+  console.error('Error starting server:', err);
+  process.exit(1);
+});
