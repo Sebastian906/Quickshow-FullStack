@@ -4,8 +4,14 @@ services:
     name: quickshow-backend
     env: node
     region: oregon
-    buildCommand: cd server && npm install && npm run build
-    startCommand: cd server && npm run start:prod
+    plan: free
+    buildCommand: |
+      cd server && 
+      npm ci --omit=dev --ignore-scripts &&
+      npm install --save-dev @nestjs/cli &&
+      npm run build &&
+      npm prune --production
+    startCommand: cd server && node --max-old-space-size=460 dist/main
     envVars:
       - key: NODE_ENV
         value: production
