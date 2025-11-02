@@ -22,6 +22,12 @@ export class Booking {
 
     @Prop({ type: String })
     paymentLink?: string;
+
+    @Prop({ type: String })
+    stripeSessionId?: string;
+
+    @Prop({ type: String })
+    stripePaymentIntentId?: string;
 }
 
 export const BookingSchema = SchemaFactory.createForClass(Booking);

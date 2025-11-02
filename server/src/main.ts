@@ -4,7 +4,9 @@ import { AppModule } from './app.module';
 import { clerkMiddleware } from '@clerk/express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true, 
+  });
 
   // Habilitar CORS
   app.enableCors({

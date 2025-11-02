@@ -1,7 +1,8 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Headers, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { ClerkAuthGuard } from 'src/guards/clerk-auth/clerk-auth.guard';
+import { BookingResponseDto } from './dto/booking-response.dto';
 
 @Controller('booking')
 export class BookingController {
@@ -11,8 +12,9 @@ export class BookingController {
     @UseGuards(ClerkAuthGuard)
     async createBooking(
         @Body() createBookingDto: CreateBookingDto,
-        @Request() req: any
-    ) {
+        @Request() req: any,
+        @Headers('origin') origin?: string,
+    ): Promise<BookingResponseDto> {
         const userId = req.auth?.userId || req.user?.id || req.user?.sub;
 
         if (!userId) {
@@ -20,7 +22,9 @@ export class BookingController {
             throw new BadRequestException('User not authenticated. Please login.');
         }
         
-        return this.bookingService.createBooking(userId, createBookingDto);
+        const requestOrigin = origin || req.headers.referer || 'http://localhost:5173';
+        
+        return this.bookingService.createBooking(userId, createBookingDto, requestOrigin);
     }
 
     @Get('seats/:showId')

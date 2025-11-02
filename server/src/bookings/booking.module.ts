@@ -6,6 +6,8 @@ import { Booking, BookingSchema } from './schemas/booking.schema';
 import { Show, ShowSchema } from 'src/shows/schema/show.schema';
 import { ClerkAuthGuard } from 'src/guards/clerk-auth/clerk-auth.guard';
 import { ConfigModule } from '@nestjs/config';
+import { StripeModule } from 'src/stripe/stripe.module';
+import { StripeWebhookController } from 'src/stripe/stripe-webhook.controller';
 
 @Module({
   imports: [
@@ -13,9 +15,10 @@ import { ConfigModule } from '@nestjs/config';
       { name: Booking.name, schema: BookingSchema },
       { name: Show.name, schema: ShowSchema },
     ]),
-    ConfigModule
+    ConfigModule,
+    StripeModule
   ],
-  controllers: [BookingController],
+  controllers: [BookingController, StripeWebhookController],
   providers: [BookingService, ClerkAuthGuard],
   exports: [BookingService, ClerkAuthGuard],
 })

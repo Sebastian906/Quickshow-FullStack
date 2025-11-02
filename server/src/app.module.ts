@@ -16,6 +16,8 @@ import { BookingModule } from './bookings/booking.module';
 import { AdminService } from './admin/admin.service';
 import { AdminController } from './admin/admin.controller';
 import { AdminModule } from './admin/admin.module';
+import { StripeModule } from './stripe/stripe.module';
+import { StripeWebhookController } from './stripe/stripe-webhook.controller';
 
 @Module({
   imports: [
@@ -35,8 +37,9 @@ import { AdminModule } from './admin/admin.module';
     ShowModule,
     BookingModule,
     AdminModule,
+    StripeModule,
   ],
-  controllers: [AppController, MovieController, ShowController],
+  controllers: [AppController, MovieController, ShowController, StripeWebhookController],
   providers: [AppService],
 })
 export class AppModule {}

@@ -4,12 +4,17 @@ import { Booking, BookingDocument } from './schemas/booking.schema';
 import { Model, Types } from 'mongoose';
 import { Show, ShowDocument } from 'src/shows/schema/show.schema';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { StripeService } from 'src/stripe/stripe.service';
+import { ConfigService } from '@nestjs/config';
+import { BookingResponseDto } from './dto/booking-response.dto';
 
 @Injectable()
 export class BookingService {
     constructor(
         @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
         @InjectModel(Show.name) private showModel: Model<ShowDocument>,
+        private stripeService: StripeService,
+        private configService: ConfigService,
     ) { }
 
     private async checkSeatsAvailability(showId: string, selectedSeats: string[]): Promise<boolean> {
@@ -39,7 +44,11 @@ export class BookingService {
         }
     }
 
-    async createBooking(clerkUserId: string, createBookingDto: CreateBookingDto): Promise<{ success: boolean; message: string }> {
+    async createBooking(
+        clerkUserId: string, 
+        createBookingDto: CreateBookingDto,
+        origin?: string
+    ): Promise<BookingResponseDto> {
         try {
             let { showId, selectedSeats } = createBookingDto;
             
@@ -59,13 +68,14 @@ export class BookingService {
             
             const showData = await this.showModel
                 .findById(showObjectId)
-                .populate('movie');
+                .populate<{ movie: any }>('movie'); 
+            
             if (!showData) {
                 throw new NotFoundException('Show not found.');
             }
             
             const bookingData = {
-                user: clerkUserId, // Guardar el Clerk userId como string
+                user: clerkUserId, 
                 show: showObjectId,
                 amount: showData.showPrice * selectedSeats.length,
                 bookedSeats: selectedSeats,
@@ -73,16 +83,38 @@ export class BookingService {
             };
 
             const booking = await this.bookingModel.create(bookingData);
-            console.log('Booking created:', booking._id);
 
             selectedSeats.forEach((seat) => {
-                showData.occupiedSeats[seat] = clerkUserId; // Guardar Clerk userId
+                showData.occupiedSeats[seat] = clerkUserId; 
             });
 
             showData.markModified('occupiedSeats');
             await showData.save();
+
+            const checkoutOrigin = origin || this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
             
-            return { success: true, message: 'Booked successfully' };
+            const session = await this.stripeService.createCheckoutSession({
+                movieTitle: showData.movie.title,
+                amount: booking.amount,
+                bookingId: (booking._id as Types.ObjectId).toString(),
+                origin: checkoutOrigin,
+            });
+
+            if (!session.url) {
+                throw new BadRequestException('Failed to create payment session');
+            }
+            
+            booking.paymentLink = session.url;
+            booking.stripeSessionId = session.id;
+            await booking.save();
+            
+            return { 
+                success: true, 
+                message: 'Booking created successfully',
+                url: session.url,
+                bookingId: (booking._id as Types.ObjectId).toString(),
+            };
+
         } catch (error) {
             console.error('Error creating booking:', error.message);
             console.error('Error name:', error.name);
@@ -115,5 +147,20 @@ export class BookingService {
             }
             return { success: false, message: error.message }
         }
+    }
+
+    async updatePaymentStatus(bookingId: string, isPaid: boolean, paymentIntentId?: string): Promise<void> {
+        const booking = await this.bookingModel.findById(bookingId);
+        if (!booking) {
+            throw new NotFoundException('Booking not found');
+        }
+
+        booking.isPaid = isPaid;
+        if (paymentIntentId) {
+            booking.stripePaymentIntentId = paymentIntentId;
+        }
+        await booking.save();
+        
+        console.log(`Payment status updated for booking ${bookingId}: isPaid=${isPaid}`);
     }
 }
