@@ -5,7 +5,7 @@ services:
     env: node
     region: oregon
     buildCommand: cd server && npm install && npm run build
-    startCommand: cd server && npm run start:dev
+    startCommand: cd server && npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
@@ -22,4 +22,10 @@ services:
       - key: INNGEST_SIGNING_KEY
         sync: false
       - key: FRONTEND_URL
+        sync: false
+      - key: TMDB_API_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
         sync: false
