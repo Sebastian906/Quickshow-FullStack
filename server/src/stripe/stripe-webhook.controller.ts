@@ -3,14 +3,14 @@ import { StripeService } from './stripe.service';
 import { BookingService } from 'src/bookings/booking.service';
 import Stripe from 'stripe';
 
-@Controller('webhooks/stripe')
+@Controller('stripe')
 export class StripeWebhookController {
     constructor(
         private stripeService: StripeService,
         private bookingService: BookingService,
     ) { }
 
-    @Post()
+    @Post('webhook') 
     async handleWebhook(
         @Req() request: RawBodyRequest<Request>,
         @Headers('stripe-signature') signature: string,
