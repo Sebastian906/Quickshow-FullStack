@@ -38,12 +38,12 @@ export class StripeWebhookController {
             console.log(`Received webhook event: ${event.type}`);
 
             switch (event.type) {
-                case 'checkout.session.completed':
-                    await this.handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
-                    break;
-
                 case 'payment_intent.succeeded':
                     await this.handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
+                    break;
+
+                case 'checkout.session.completed':
+                    await this.handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
                     break;
 
                 case 'payment_intent.payment_failed':
@@ -61,6 +61,44 @@ export class StripeWebhookController {
         }
     }
 
+    private async handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+        console.log(`PaymentIntent succeeded: ${paymentIntent.id}`);
+        
+        try {
+            const stripe = this.stripeService.getStripe();
+            const sessionList = await stripe.checkout.sessions.list({
+                payment_intent: paymentIntent.id,
+                limit: 1,
+            });
+
+            if (sessionList.data.length === 0) {
+                console.error(`No checkout session found for payment_intent: ${paymentIntent.id}`);
+                return;
+            }
+
+            const session = sessionList.data[0];
+            const bookingId = session.metadata?.bookingId;
+
+            if (!bookingId) {
+                console.error('No bookingId in session metadata');
+                return;
+            }
+
+            console.log(`Updating booking ${bookingId} to paid status`);
+            
+            await this.bookingService.updatePaymentStatusFromWebhook(
+                bookingId,
+                true,
+                paymentIntent.id,
+            );
+
+            console.log(`Successfully updated booking ${bookingId}`);
+        } catch (error) {
+            console.error('Error in handlePaymentIntentSucceeded:', error);
+            throw error;
+        }
+    }
+
     private async handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
         const bookingId = session.metadata?.bookingId;
 
@@ -75,10 +113,6 @@ export class StripeWebhookController {
             true,
             session.payment_intent as string,
         );
-    }
-
-    private async handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-        console.log(`PaymentIntent succeeded: ${paymentIntent.id}`);
     }
 
     private async handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {

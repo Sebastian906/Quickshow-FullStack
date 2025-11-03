@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { BookingController } from './booking.controller';
 import { BookingService } from './booking.service';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -16,7 +16,7 @@ import { StripeWebhookController } from 'src/stripe/stripe-webhook.controller';
       { name: Show.name, schema: ShowSchema },
     ]),
     ConfigModule,
-    StripeModule
+    forwardRef(() => StripeModule),
   ],
   controllers: [BookingController, StripeWebhookController],
   providers: [BookingService, ClerkAuthGuard],

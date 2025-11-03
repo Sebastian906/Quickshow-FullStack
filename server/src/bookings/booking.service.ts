@@ -27,12 +27,12 @@ export class BookingService {
 
             const objectId = new Types.ObjectId(showId);
             const showData = await this.showModel.findById(objectId);
-            
+
             if (!showData) {
                 console.error('Show not found in checkSeatsAvailability:', showId);
                 return false;
             }
-            
+
             const occupiedSeats = showData.occupiedSeats;
             const isAnySeatTaken = selectedSeats.some(
                 (seat) => occupiedSeats[seat]
@@ -45,37 +45,37 @@ export class BookingService {
     }
 
     async createBooking(
-        clerkUserId: string, 
+        clerkUserId: string,
         createBookingDto: CreateBookingDto,
         origin?: string
     ): Promise<BookingResponseDto> {
         try {
             let { showId, selectedSeats } = createBookingDto;
-            
+
             showId = showId.trim();
-            
+
             if (!Types.ObjectId.isValid(showId)) {
                 console.error('Invalid showId');
                 throw new BadRequestException(`Invalid show ID format`);
             }
 
             const showObjectId = new Types.ObjectId(showId);
-            
+
             const isAvailable = await this.checkSeatsAvailability(showId, selectedSeats);
             if (!isAvailable) {
                 throw new BadRequestException('Selected seats are not available.');
             }
-            
+
             const showData = await this.showModel
                 .findById(showObjectId)
-                .populate<{ movie: any }>('movie'); 
-            
+                .populate<{ movie: any }>('movie');
+
             if (!showData) {
                 throw new NotFoundException('Show not found.');
             }
-            
+
             const bookingData = {
-                user: clerkUserId, 
+                user: clerkUserId,
                 show: showObjectId,
                 amount: showData.showPrice * selectedSeats.length,
                 bookedSeats: selectedSeats,
@@ -85,14 +85,14 @@ export class BookingService {
             const booking = await this.bookingModel.create(bookingData);
 
             selectedSeats.forEach((seat) => {
-                showData.occupiedSeats[seat] = clerkUserId; 
+                showData.occupiedSeats[seat] = clerkUserId;
             });
 
             showData.markModified('occupiedSeats');
             await showData.save();
 
             const checkoutOrigin = origin || this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
-            
+
             const session = await this.stripeService.createCheckoutSession({
                 movieTitle: showData.movie.title,
                 amount: booking.amount,
@@ -103,13 +103,13 @@ export class BookingService {
             if (!session.url) {
                 throw new BadRequestException('Failed to create payment session');
             }
-            
+
             booking.paymentLink = session.url;
             booking.stripeSessionId = session.id;
             await booking.save();
-            
-            return { 
-                success: true, 
+
+            return {
+                success: true,
                 message: 'Booking created successfully',
                 url: session.url,
                 bookingId: (booking._id as Types.ObjectId).toString(),
@@ -118,7 +118,7 @@ export class BookingService {
         } catch (error) {
             console.error('Error creating booking:', error.message);
             console.error('Error name:', error.name);
-            
+
             if (error instanceof BadRequestException || error instanceof NotFoundException) {
                 throw error;
             }
@@ -160,7 +160,23 @@ export class BookingService {
             booking.stripePaymentIntentId = paymentIntentId;
         }
         await booking.save();
-        
+
         console.log(`Payment status updated for booking ${bookingId}: isPaid=${isPaid}`);
+    }
+
+    async updatePaymentStatusFromWebhook(
+        bookingId: string,
+        isPaid: boolean,
+        paymentIntentId: string,
+    ): Promise<void> {
+        await this.bookingModel.findByIdAndUpdate(
+            bookingId,
+            {
+                isPaid: isPaid,
+                paymentLink: '', 
+                stripePaymentIntentId: paymentIntentId,
+            },
+            { new: true }
+        );
     }
 }
