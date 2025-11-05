@@ -4,7 +4,7 @@ import { serve } from 'inngest/express';
 import { inngest } from '../configs/inngest.config';
 import { InngestService } from './inngest.service';
 
-@Controller('api/inngest')
+@Controller('inngest')
 export class InngestController {
     private inngestServe;
 
