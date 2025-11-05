@@ -7,6 +7,7 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { StripeService } from 'src/stripe/stripe.service';
 import { ConfigService } from '@nestjs/config';
 import { BookingResponseDto } from './dto/booking-response.dto';
+import { inngest } from 'src/configs/inngest.config';
 
 @Injectable()
 export class BookingService {
@@ -108,6 +109,14 @@ export class BookingService {
             booking.stripeSessionId = session.id;
             await booking.save();
 
+            // Run Inngest Scheduler Function to check payment status after 10 minutes
+            await inngest.send({
+                name: "app/checkpayment",
+                data: {
+                    bookingId: (booking._id as Types.ObjectId).toString()
+                }
+            });
+
             return {
                 success: true,
                 message: 'Booking created successfully',
@@ -173,7 +182,7 @@ export class BookingService {
             bookingId,
             {
                 isPaid: isPaid,
-                paymentLink: '', 
+                paymentLink: '',
                 stripePaymentIntentId: paymentIntentId,
             },
             { new: true }

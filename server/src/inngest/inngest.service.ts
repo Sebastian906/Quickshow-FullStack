@@ -1,10 +1,18 @@
 import { Injectable } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import { Booking, BookingDocument } from "src/bookings/schemas/booking.schema";
 import { inngest } from "src/configs/inngest.config";
+import { Show, ShowDocument } from "src/shows/schema/show.schema";
 import { UsersService } from "src/users/users.service";
 
 @Injectable()
 export class InngestService {
-    constructor(private readonly usersService: UsersService) { }
+    constructor(
+        private readonly usersService: UsersService,
+        @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
+        @InjectModel(Show.name) private showModel: Model<ShowDocument>,
+    ) { }
 
     getFunctions() {
         // Inngest function to save user data to a database
@@ -69,6 +77,65 @@ export class InngestService {
                 }
             }
         );
-        return [syncUserCreation, syncUserDeletion, syncUserUpdate];
+
+        // Inngest function to cancel booking and release seats of show after 10 minutes of booking created if payment is not made
+        const releaseSeatsAndDeleteBooking = inngest.createFunction(
+            { id: 'release-seats-delete-booking' },
+            { event: "app/checkpayment" },
+            async ({ event, step }) => {
+                const tenMinutesLater = new Date(Date.now() * 10 * 60 * 1000);
+                await step.sleepUntil('wait-for-10-minutes', tenMinutesLater);
+
+                await step.run('check-payment-status', async () => {
+                    const bookingId = event.data.bookingId;
+                    try {
+                        const booking = await this.bookingModel.findById(bookingId);
+
+                        if (!booking) {
+                            console.log(`Booking ${bookingId} not found`);
+                            return { success: false, message: 'Booking not found' };
+                        }
+    
+                        // If payment is not made, release seats and delete booking
+                        if (!booking.isPaid) {
+                            const show = await this.showModel.findById(booking.show);
+
+                            if (!show) {
+                                console.log(`Show not found for booking ${bookingId}`);
+                                return { success: false, message: 'Show not found' };
+                            }
+
+                            booking.bookedSeats.forEach((seat) => {
+                                delete show.occupiedSeats[seat];
+                            });
+
+                            show.markModified('occupiedSeats');
+                            await show.save();
+
+                            await this.bookingModel.findByIdAndDelete(booking._id);
+
+                            console.log(`Booking ${bookingId} cancelled and seats released`);
+                            return { 
+                                success: true, 
+                                message: 'Booking cancelled and seats released',
+                                bookingId: booking._id 
+                            };
+                        } else {
+                            console.log(`Booking ${bookingId} was paid, no action needed`);
+                            return { 
+                                success: true, 
+                                message: 'Booking was paid',
+                                bookingId: booking._id 
+                            };
+                        }
+                    } catch (error) {
+                        console.error(`Error processing booking ${bookingId}:`, error);
+                        throw error;
+                    }
+                });
+            }
+        );
+
+        return [syncUserCreation, syncUserDeletion, syncUserUpdate, releaseSeatsAndDeleteBooking];
     }
 }
