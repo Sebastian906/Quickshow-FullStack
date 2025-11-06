@@ -136,6 +136,8 @@ export class InngestService {
             }
         );
 
+        // Inngest function to send email when user books a show
+
         return [syncUserCreation, syncUserDeletion, syncUserUpdate, releaseSeatsAndDeleteBooking];
     }
 }
