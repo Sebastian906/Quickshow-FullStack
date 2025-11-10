@@ -2,6 +2,7 @@ import { BadRequestException, Controller, Headers, Post, RawBodyRequest, Req } f
 import { StripeService } from './stripe.service';
 import { BookingService } from 'src/bookings/booking.service';
 import Stripe from 'stripe';
+import { inngest } from 'src/configs/inngest.config';
 
 @Controller('stripe')
 export class StripeWebhookController {
@@ -93,6 +94,14 @@ export class StripeWebhookController {
             );
 
             console.log(`Successfully updated booking ${bookingId}`);
+
+            await inngest.send({
+                name: 'app/show.booked',
+                data: { bookingId }
+            });
+            
+            console.log(`Inngest event sent for booking confirmation: ${bookingId}`);
+
         } catch (error) {
             console.error('Error in handlePaymentIntentSucceeded:', error);
             throw error;

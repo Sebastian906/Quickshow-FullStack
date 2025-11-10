@@ -187,5 +187,15 @@ export class BookingService {
             },
             { new: true }
         );
+
+        if (isPaid) {
+            await inngest.send({
+                name: 'app/show.booked',
+                data: {
+                    bookingId: bookingId
+                }
+            });
+            console.log(`Inngest event 'app/show.booked' sent for booking ${bookingId}`);
+        }
     }
 }

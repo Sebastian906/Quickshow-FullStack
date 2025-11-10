@@ -3,11 +3,13 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { Booking, BookingDocument } from "src/bookings/schemas/booking.schema";
 import { inngest } from "src/configs/inngest.config";
+import { EmailService } from "src/configs/nodemailer.config";
 import { Show, ShowDocument } from "src/shows/schema/show.schema";
 import { UsersService } from "src/users/users.service";
 
 @Injectable()
 export class InngestService {
+    private emailService: EmailService;
     constructor(
         private readonly usersService: UsersService,
         @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
@@ -95,7 +97,7 @@ export class InngestService {
                             console.log(`Booking ${bookingId} not found`);
                             return { success: false, message: 'Booking not found' };
                         }
-    
+
                         // If payment is not made, release seats and delete booking
                         if (!booking.isPaid) {
                             const show = await this.showModel.findById(booking.show);
@@ -115,17 +117,17 @@ export class InngestService {
                             await this.bookingModel.findByIdAndDelete(booking._id);
 
                             console.log(`Booking ${bookingId} cancelled and seats released`);
-                            return { 
-                                success: true, 
+                            return {
+                                success: true,
                                 message: 'Booking cancelled and seats released',
-                                bookingId: booking._id 
+                                bookingId: booking._id
                             };
                         } else {
                             console.log(`Booking ${bookingId} was paid, no action needed`);
-                            return { 
-                                success: true, 
+                            return {
+                                success: true,
                                 message: 'Booking was paid',
-                                bookingId: booking._id 
+                                bookingId: booking._id
                             };
                         }
                     } catch (error) {
@@ -137,7 +139,87 @@ export class InngestService {
         );
 
         // Inngest function to send email when user books a show
+        const sendBookingConfirmationEmail = inngest.createFunction(
+            { id: 'send-booking-confirmation-email' },
+            { event: 'app/show.booked' },
+            async ({ event, step }) => {
+                await step.run('send-confirmation-email', async () => {
+                    const { bookingId } = event.data;
 
-        return [syncUserCreation, syncUserDeletion, syncUserUpdate, releaseSeatsAndDeleteBooking];
+                    try {
+                        const booking = await this.bookingModel
+                            .findById(bookingId)
+                            .populate({
+                                path: 'show',
+                                populate: { path: 'movie', model: 'Movie' }
+                            })
+                            .exec();
+
+                        if (!booking) {
+                            console.error(`Booking ${bookingId} not found`);
+                            return { success: false, message: 'Booking not found' };
+                        }
+
+                        // Obtener datos del usuario usando findById
+                        const user = await this.usersService.findById(booking.user);
+
+                        if (!user) {
+                            console.error(`User ${booking.user} not found`);
+                            return { success: false, message: 'User not found' };
+                        }
+
+                        // Obtener datos del show y película (ya poblados)
+                        const show = booking.show as any;
+                        const movie = show.movie;
+
+                        // Formatear fecha y hora para la zona horaria de Colombia
+                        const showDate = new Date(show.showDateTime);
+                        const formattedDate = showDate.toLocaleDateString('en-US', {
+                            timeZone: 'America/Bogota',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        const formattedTime = showDate.toLocaleTimeString('en-US', {
+                            timeZone: 'America/Bogota',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        // Enviar email de confirmación
+                        await this.emailService.sendEmail({
+                            to: user.email,
+                            subject: `Payment Confirmation: "${movie.title}" booked!`,
+                            body: `
+                        <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+                            <h2>Hi ${user.name},</h2>
+                            <p>Your booking for <strong style="color: #F84565;">"${movie.title}"</strong> is confirmed.</p>
+                            <p>
+                                <strong>Date:</strong> ${formattedDate}<br/>
+                                <strong>Time:</strong> ${formattedTime}<br/>
+                                <strong>Seats:</strong> ${booking.bookedSeats.join(', ')}<br/>
+                                <strong>Total:</strong> $${booking.amount.toLocaleString('en-US')}
+                            </p>
+                            <p>Enjoy the show!</p>
+                            <p>Thanks for booking with us!<br/>-- Quickshow Team</p>
+                        </div>
+                    `
+                        });
+
+                        console.log(`Confirmation email sent for booking ${bookingId}`);
+                        return {
+                            success: true,
+                            message: 'Confirmation email sent',
+                            bookingId: booking._id
+                        };
+                    } catch (error) {
+                        console.error(`Error sending confirmation email for booking ${bookingId}:`, error);
+                        throw error;
+                    }
+                });
+            }
+        );
+
+        return [syncUserCreation, syncUserDeletion, syncUserUpdate, releaseSeatsAndDeleteBooking, sendBookingConfirmationEmail];
     }
 }
