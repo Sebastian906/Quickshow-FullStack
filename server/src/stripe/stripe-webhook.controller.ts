@@ -1,15 +1,24 @@
 import { BadRequestException, Controller, Headers, Post, RawBodyRequest, Req } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import { BookingService } from 'src/bookings/booking.service';
+import { ConfigService } from '@nestjs/config';
+import { Inngest } from 'inngest';
 import Stripe from 'stripe';
-import { inngest } from 'src/configs/inngest.config';
 
 @Controller('stripe')
 export class StripeWebhookController {
+    private inngest: Inngest;
     constructor(
         private stripeService: StripeService,
         private bookingService: BookingService,
-    ) { }
+        private configService: ConfigService,
+    ) { 
+        this.inngest = new Inngest({
+            id: 'Quickshow',
+            eventKey: this.configService.get<string>('INNGEST_EVENT_KEY'),
+            signingKey: this.configService.get<string>('INNGEST_SIGNING_KEY'),
+        });
+    }
 
     @Post('webhook') 
     async handleWebhook(
@@ -72,11 +81,6 @@ export class StripeWebhookController {
                 limit: 1,
             });
 
-            if (sessionList.data.length === 0) {
-                console.error(`No checkout session found for payment_intent: ${paymentIntent.id}`);
-                return;
-            }
-
             const session = sessionList.data[0];
             const bookingId = session.metadata?.bookingId;
 
@@ -95,13 +99,13 @@ export class StripeWebhookController {
 
             console.log(`Successfully updated booking ${bookingId}`);
 
-            await inngest.send({
+            // Send Confirmation Email via Inngest
+            await this.inngest.send({
                 name: 'app/show.booked',
                 data: { bookingId }
             });
             
             console.log(`Inngest event sent for booking confirmation: ${bookingId}`);
-
         } catch (error) {
             console.error('Error in handlePaymentIntentSucceeded:', error);
             throw error;

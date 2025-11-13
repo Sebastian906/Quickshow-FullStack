@@ -7,16 +7,23 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { StripeService } from 'src/stripe/stripe.service';
 import { ConfigService } from '@nestjs/config';
 import { BookingResponseDto } from './dto/booking-response.dto';
-import { inngest } from 'src/configs/inngest.config';
+import { Inngest } from 'inngest';
 
 @Injectable()
 export class BookingService {
+    private inngest: Inngest;
     constructor(
         @InjectModel(Booking.name) private bookingModel: Model<BookingDocument>,
         @InjectModel(Show.name) private showModel: Model<ShowDocument>,
         private stripeService: StripeService,
         private configService: ConfigService,
-    ) { }
+    ) { 
+        this.inngest = new Inngest({
+            id: 'Quickshow',
+            eventKey: this.configService.get<string>('INNGEST_EVENT_KEY'),
+            signingKey: this.configService.get<string>('INNGEST_SIGNING_KEY'),
+        });
+    }
 
     private async checkSeatsAvailability(showId: string, selectedSeats: string[]): Promise<boolean> {
         try {
@@ -110,7 +117,7 @@ export class BookingService {
             await booking.save();
 
             // Run Inngest Scheduler Function to check payment status after 10 minutes
-            await inngest.send({
+            await this.inngest.send({
                 name: "app/checkpayment",
                 data: {
                     bookingId: (booking._id as Types.ObjectId).toString()
@@ -126,7 +133,7 @@ export class BookingService {
 
         } catch (error) {
             console.error('Error creating booking:', error.message);
-            console.error('Error name:', error.name);
+            console.error('Error name:', error.stack);
 
             if (error instanceof BadRequestException || error instanceof NotFoundException) {
                 throw error;
@@ -189,7 +196,7 @@ export class BookingService {
         );
 
         if (isPaid) {
-            await inngest.send({
+            await this.inngest.send({
                 name: 'app/show.booked',
                 data: {
                     bookingId: bookingId
