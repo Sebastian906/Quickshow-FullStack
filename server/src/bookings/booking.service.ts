@@ -117,12 +117,17 @@ export class BookingService {
             await booking.save();
 
             // Run Inngest Scheduler Function to check payment status after 10 minutes
-            await this.inngest.send({
-                name: "app/checkpayment",
-                data: {
-                    bookingId: (booking._id as Types.ObjectId).toString()
-                }
-            });
+            try {
+                await this.inngest.send({
+                    name: "app/checkpayment",
+                    data: {
+                        bookingId: (booking._id as Types.ObjectId).toString()
+                    }
+                });
+                console.log(`Payment check scheduled for booking ${booking._id}`);
+            } catch (inngestError) {
+                console.error('Error scheduling payment check:', inngestError);
+            }
 
             return {
                 success: true,
@@ -133,7 +138,7 @@ export class BookingService {
 
         } catch (error) {
             console.error('Error creating booking:', error.message);
-            console.error('Error name:', error.stack);
+            console.error('Error stack:', error.stack);
 
             if (error instanceof BadRequestException || error instanceof NotFoundException) {
                 throw error;
@@ -185,7 +190,7 @@ export class BookingService {
         isPaid: boolean,
         paymentIntentId: string,
     ): Promise<void> {
-        await this.bookingModel.findByIdAndUpdate(
+        const updatedBooking = await this.bookingModel.findByIdAndUpdate(
             bookingId,
             {
                 isPaid: isPaid,
@@ -195,14 +200,10 @@ export class BookingService {
             { new: true }
         );
 
-        if (isPaid) {
-            await this.inngest.send({
-                name: 'app/show.booked',
-                data: {
-                    bookingId: bookingId
-                }
-            });
-            console.log(`Inngest event 'app/show.booked' sent for booking ${bookingId}`);
+        if (!updatedBooking) {
+            throw new NotFoundException(`Booking ${bookingId} not found`);
         }
+
+        console.log(`Booking ${bookingId} updated: isPaid=${isPaid}, paymentIntent=${paymentIntentId}`);
     }
 }

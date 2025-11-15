@@ -16,7 +16,6 @@ export class StripeWebhookController {
         this.inngest = new Inngest({
             id: 'Quickshow',
             eventKey: this.configService.get<string>('INNGEST_EVENT_KEY'),
-            signingKey: this.configService.get<string>('INNGEST_SIGNING_KEY'),
         });
     }
 
@@ -48,10 +47,6 @@ export class StripeWebhookController {
             console.log(`Received webhook event: ${event.type}`);
 
             switch (event.type) {
-                case 'payment_intent.succeeded':
-                    await this.handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
-                    break;
-
                 case 'checkout.session.completed':
                     await this.handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
                     break;
@@ -71,8 +66,42 @@ export class StripeWebhookController {
         }
     }
 
-    private async handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-        console.log(`PaymentIntent succeeded: ${paymentIntent.id}`);
+    private async handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+        const bookingId = session.metadata?.bookingId;
+
+        if (!bookingId) {
+            console.error('No bookingId in session metadata');
+            return;
+        }
+
+        console.log(`Checkout session completed for booking: ${bookingId}`);
+        console.log(`Payment status: ${session.payment_status}`);
+
+        if (session.payment_status === 'paid') {
+            try {
+                await this.bookingService.updatePaymentStatusFromWebhook(
+                    bookingId,
+                    true,
+                    session.payment_intent as string,
+                );
+
+                await this.inngest.send({
+                    name: 'app/show.booked',
+                    data: { bookingId }
+                });
+                
+                console.log(`Booking ${bookingId} marked as paid and confirmation email queued`);
+            } catch (error) {
+                console.error(`Error updating booking ${bookingId}:`, error);
+                throw error;
+            }
+        } else {
+            console.log(`Payment not completed yet for booking ${bookingId}, status: ${session.payment_status}`);
+        }
+    }
+
+    private async handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
+        console.error(`PaymentIntent failed: ${paymentIntent.id}`);
         
         try {
             const stripe = this.stripeService.getStripe();
@@ -82,53 +111,13 @@ export class StripeWebhookController {
             });
 
             const session = sessionList.data[0];
-            const bookingId = session.metadata?.bookingId;
+            const bookingId = session?.metadata?.bookingId;
 
-            if (!bookingId) {
-                console.error('No bookingId in session metadata');
-                return;
+            if (bookingId) {
+                console.log(`Payment failed for booking ${bookingId}`);
             }
-
-            console.log(`Updating booking ${bookingId} to paid status`);
-            
-            await this.bookingService.updatePaymentStatusFromWebhook(
-                bookingId,
-                true,
-                paymentIntent.id,
-            );
-
-            console.log(`Successfully updated booking ${bookingId}`);
-
-            // Send Confirmation Email via Inngest
-            await this.inngest.send({
-                name: 'app/show.booked',
-                data: { bookingId }
-            });
-            
-            console.log(`Inngest event sent for booking confirmation: ${bookingId}`);
         } catch (error) {
-            console.error('Error in handlePaymentIntentSucceeded:', error);
-            throw error;
+            console.error('Error handling failed payment:', error);
         }
-    }
-
-    private async handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-        const bookingId = session.metadata?.bookingId;
-
-        if (!bookingId) {
-            console.error('No bookingId in session metadata');
-            return;
-        }
-
-        console.log(`Payment completed for booking: ${bookingId}`);
-        await this.bookingService.updatePaymentStatus(
-            bookingId,
-            true,
-            session.payment_intent as string,
-        );
-    }
-
-    private async handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
-        console.error(`PaymentIntent failed: ${paymentIntent.id}`);
     }
 }
