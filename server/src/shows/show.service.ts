@@ -8,12 +8,14 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { AddShowDto } from './dto/add-show.dto';
 import { Movie, MovieDocument } from 'src/movies/schemas/movie.schema';
+import { Inngest } from 'inngest';
 
 @Injectable()
 export class ShowService {
 
     private readonly tmdbApiKey: string;
     private readonly tmdbBaseUrl: string = 'https://api.themoviedb.org/3';
+    private inngest: Inngest;
 
     constructor(
         @InjectModel(Show.name) private showModel: Model<ShowDocument>,
@@ -25,6 +27,11 @@ export class ShowService {
         if (!this.tmdbApiKey) {
             console.warn('Warning: TMDB_API_KEY is not set in environment variables');
         }
+
+        this.inngest = new Inngest({
+            id: 'Quickshow',
+            eventKey: this.configService.get<string>('INNGEST_EVENT_KEY'),
+        });
     }
 
     // API to get now playing movies from TMDB API
@@ -124,9 +131,26 @@ export class ShowService {
                     });
                 });
             });
+
             if (showsToCreate.length > 0) {
                 await this.showModel.insertMany(showsToCreate);
+
+                // Trigger Inngest event for new show notifications
+                try {
+                    await this.inngest.send({
+                        name: 'app/show.added',
+                        data: {
+                            movieTitle: movie.title,
+                            movieId: movie._id
+                        }
+                    });
+                    console.log(`Inngest event triggered for new show: ${movie.title}`);
+                } catch (inngestError) {
+                    // Log error but don't fail the entire operation
+                    console.error('Error triggering Inngest event:', inngestError);
+                }
             }
+
             return { success: true, message: 'Show added successfully.' };
         } catch (error) {
             console.error('Error adding show:', error);

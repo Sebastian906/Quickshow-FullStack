@@ -345,13 +345,76 @@ export class InngestService {
             }
         );
 
+        // Inngest function to send notifications when a new show is added
+        const sendNewShowNotifications = this.inngest.createFunction(
+            { id: 'send-new-show-notifications' },
+            { event: 'app/show.added' },
+            async ({ event, step }) => {
+                await step.run('send-new-show-notifications', async () => {
+                    const { movieTitle } = event.data;
+
+                    try {
+                        // Get all users
+                        const users = await this.usersService.findAll();
+
+                        if (!users || users.length === 0) {
+                            console.log('No users found to notify');
+                            return { success: true, message: 'No users to notify', sent: 0 };
+                        }
+
+                        // Send email to each user
+                        const emailPromises = users.map(async (user) => {
+                            try {
+                                await this.emailService.sendEmail({
+                                    to: user.email,
+                                    subject: `New Show Added: ${movieTitle}`,
+                                    body: `
+                                        <div style="font-family: Arial, sans-serif; padding: 20px;">
+                                            <h2>Hi ${user.name},</h2>
+                                            <p>We've just added a new show to our library:</p>
+                                            <h3 style="color: #F84565;">"${movieTitle}"</h3>
+                                            <p>Visit our website to book your tickets now!</p>
+                                            <br/>
+                                            <p>Thanks,<br/>QuickShow Team</p>
+                                        </div>
+                                    `
+                                });
+
+                                return { status: 'fulfilled' };
+                            } catch (error) {
+                                console.error(`Failed to send notification to ${user.email}:`, error);
+                                return { status: 'rejected', error };
+                            }
+                        });
+
+                        const results = await Promise.allSettled(emailPromises);
+                        const sent = results.filter(r => r.status === 'fulfilled').length;
+                        const failed = results.length - sent;
+
+                        console.log(`New show notifications: sent ${sent}, failed ${failed}`);
+
+                        return {
+                            success: true,
+                            message: `Notifications sent for "${movieTitle}"`,
+                            sent,
+                            failed,
+                        };
+                    } catch (error) {
+                        console.error('Error sending new show notifications:', error);
+                        throw error;
+                    }
+                });
+            }
+        );
+
         return [
             syncUserCreation, 
             syncUserDeletion, 
             syncUserUpdate, 
             releaseSeatsAndDeleteBooking, 
             sendBookingConfirmationEmail, 
-            sendShowReminders
+            sendShowReminders,
+            sendNewShowNotifications
         ];
     }
 }
