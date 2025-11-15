@@ -225,6 +225,133 @@ export class InngestService {
             }
         );
 
-        return [syncUserCreation, syncUserDeletion, syncUserUpdate, releaseSeatsAndDeleteBooking, sendBookingConfirmationEmail];
+        // Inngest function to send show reminders every 8 hours
+        const sendShowReminders = this.inngest.createFunction(
+            { id: 'send-show-reminders' },
+            { cron: '0 */8 * * *' }, // Every 8 hours
+            async ({ step }) => {
+                interface ReminderTask {
+                    userEmail: string;
+                    userName: string;
+                    movieTitle: string;
+                    showTime: string;
+                }
+
+                // Prepare reminder tasks
+                const reminderTasks = await step.run('prepare-reminder-tasks', async (): Promise<ReminderTask[]> => {
+                    const now = new Date();
+                    const in8Hours = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                    const windowStart = new Date(in8Hours.getTime() - 10 * 60 * 1000);
+
+                    try {
+                        const shows = await this.showModel
+                            .find({
+                                showDateTime: { $gte: windowStart, $lte: in8Hours }
+                            })
+                            .populate('movie')
+                            .exec();
+
+                        const tasks: ReminderTask[] = [];
+
+                        for (const show of shows) {
+                            if (!show.movie || !show.occupiedSeats) continue;
+
+                            // Get unique user IDs from occupiedSeats
+                            const userIds = [...new Set(Object.values(show.occupiedSeats))] as string[];
+                            
+                            if (userIds.length === 0) continue;
+
+                            // Get users by IDs
+                            const users = await this.usersService.findByIds(userIds);
+
+                            for (const user of users) {
+                                tasks.push({
+                                    userEmail: user.email,
+                                    userName: user.name,
+                                    movieTitle: (show.movie as any).title,
+                                    showTime: show.showDateTime.toISOString(), // Convertir a string
+                                });
+                            }
+                        }
+
+                        return tasks;
+                    } catch (error) {
+                        console.error('Error preparing reminder tasks:', error);
+                        throw error;
+                    }
+                });
+
+                if (!reminderTasks || reminderTasks.length === 0) {
+                    console.log('No reminders to send');
+                    return { sent: 0, failed: 0, message: 'No reminders to send.' };
+                }
+
+                // Send reminder emails
+                const results = await step.run('send-all-reminders', async () => {
+                    const emailPromises = reminderTasks.map(async (task: ReminderTask) => {
+                        try {
+                            const showDate = new Date(task.showTime);
+                            const formattedDate = showDate.toLocaleDateString('en-US', {
+                                timeZone: 'America/Bogota',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            });
+                            const formattedTime = showDate.toLocaleTimeString('en-US', {
+                                timeZone: 'America/Bogota',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+
+                            await this.emailService.sendEmail({
+                                to: task.userEmail,
+                                subject: `Reminder: Your movie "${task.movieTitle}" starts soon!`,
+                                body: `
+                                    <div style="font-family: Arial, sans-serif; padding: 20px;">
+                                        <h2>Hello ${task.userName},</h2>
+                                        <p>This is a quick reminder that your movie:</p>
+                                        <h3 style="color: #F84565;">${task.movieTitle}</h3>
+                                        <p>
+                                            is scheduled for <strong>${formattedDate}</strong> at <strong>${formattedTime}</strong>.
+                                        </p>
+                                        <p>It starts in approximately <strong>8 hours</strong> - make sure you're ready!</p>
+                                        <br/>
+                                        <p>Enjoy the show!<br/>Quickshow Team</p>
+                                    </div>
+                                `
+                            });
+
+                            return { status: 'fulfilled' };
+                        } catch (error) {
+                            console.error(`Failed to send reminder to ${task.userEmail}:`, error);
+                            return { status: 'rejected', error };
+                        }
+                    });
+
+                    const results = await Promise.allSettled(emailPromises);
+                    const sent = results.filter(r => r.status === 'fulfilled').length;
+                    const failed = results.length - sent;
+
+                    console.log(`Sent ${sent} reminder(s), ${failed} failed.`);
+                    
+                    return {
+                        sent,
+                        failed,
+                        message: `Sent ${sent} reminder(s), ${failed} failed.`
+                    };
+                });
+
+                return results;
+            }
+        );
+
+        return [
+            syncUserCreation, 
+            syncUserDeletion, 
+            syncUserUpdate, 
+            releaseSeatsAndDeleteBooking, 
+            sendBookingConfirmationEmail, 
+            sendShowReminders
+        ];
     }
 }

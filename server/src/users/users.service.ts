@@ -35,6 +35,13 @@ export class UsersService {
         return user;
     }
 
+    async findByIds(ids: string[]): Promise<User[]> {
+        return this.userModel
+            .find({ _id: { $in: ids } })
+            .select('name email')
+            .exec();
+    }
+
     async update(id: string, userData: Partial<User>): Promise<User> {
         const user = await this.userModel.findByIdAndUpdate(id, userData, { new: true }).exec();
         if (!user) {
