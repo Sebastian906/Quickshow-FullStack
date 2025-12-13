@@ -14,7 +14,7 @@ export class StripeService {
         }
 
         this.stripe = new Stripe(secretKey, {
-            apiVersion: '2025-10-29.clover',
+            apiVersion: '2025-11-17.clover',
         });
     }
 

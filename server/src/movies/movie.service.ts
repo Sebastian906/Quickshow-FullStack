@@ -48,7 +48,11 @@ export class MovieService {
 
     async findByGenre(genre: string): Promise<Movie[]> {
         return this.movieModel
-            .find({ genres: { $regex: genre, $options: 'i' } })
+            .find({ 
+                genres: { 
+                    $elemMatch: { name: { $regex: genre, $options: 'i' } } 
+                } 
+            })
             .exec();
     }
 
