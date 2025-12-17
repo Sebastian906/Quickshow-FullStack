@@ -18,6 +18,7 @@ import { AdminController } from './admin/admin.controller';
 import { AdminModule } from './admin/admin.module';
 import { StripeModule } from './stripe/stripe.module';
 import { StripeWebhookController } from './stripe/stripe-webhook.controller';
+import { TheatersModule } from './theaters/theaters.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { StripeWebhookController } from './stripe/stripe-webhook.controller';
     BookingModule,
     AdminModule,
     StripeModule,
+    TheatersModule,
   ],
   controllers: [AppController, MovieController, ShowController, StripeWebhookController],
   providers: [AppService],
