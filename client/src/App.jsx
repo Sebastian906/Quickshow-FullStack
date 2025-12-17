@@ -17,6 +17,9 @@ import { useAppContext } from './context/AppContext'
 import { SignIn } from '@clerk/clerk-react'
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute'
 import Loading from './components/Loading'
+import Theaters from './pages/Theaters'
+import ListTheaters from './pages/admin/ListTheaters'
+import AddTheaters from './pages/admin/AddTheaters'
 
 const App = () => {
 
@@ -33,6 +36,7 @@ const App = () => {
         <Route path='/movies' element={<Movies/>}/>
         <Route path='/movies/:id' element={<MovieDetails/>}/>
         <Route path='/movies/:id/:date' element={<SeatLayout/>}/>
+        <Route path='/theaters' element={<Theaters/>}/>
         <Route path='/my-bookings' element={<MyBookings/>}/>
         <Route path='/loading/:nextUrl' element={<Loading/>}/>
         <Route path='/favorites' element={<Favorite/>}/>
@@ -43,8 +47,10 @@ const App = () => {
         }>
           <Route index element={<Dashboard/>}/>
           <Route path='add-shows' element={<AddShows/>}/>
+          <Route path='add-theaters' element={<AddTheaters/>}/>
           <Route path='list-shows' element={<ListShows/>}/>
           <Route path='list-bookings' element={<ListBookings/>}/>
+          <Route path='list-theaters' element={<ListTheaters/>}/>
         </Route>
       </Routes>
       {!isAdminRoute && <Footer/>}

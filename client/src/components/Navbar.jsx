@@ -42,8 +42,8 @@ const Navbar = () => {
                 </Link>
                 <Link
                     onClick={() => { scrollTo(0, 0); setIsOpen(false) }}
-                    to='/'
-                // className={`px-4 py-2 rounded-full transition-colors ${location.pathname === '/theaters' ? 'bg-white/20' : 'hover:bg-white/10'}`}
+                    to='/theaters'
+                    className={`px-4 py-2 rounded-full transition-colors ${location.pathname === '/theaters' ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 >
                     Theaters
                 </Link>
