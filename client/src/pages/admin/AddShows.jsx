@@ -13,7 +13,9 @@ const AddShows = () => {
 
     const currency = import.meta.env.VITE_CURRENCY
     const [nowPlayingMovies, setNowPlayingMovies] = useState([]);
+    const [theaters, setTheaters] = useState([]);
     const [selectedMovie, setSelectedMovie] = useState(null);
+    const [selectedTheater, setSelectedTheater] = useState(null);
     const [dateTimeSelection, setDateTimeSelection] = useState({});
     const [dateTimeInput, setDateTimeInput] = useState("");
     const [showPrice, setShowPrice] = useState("");
@@ -29,6 +31,19 @@ const AddShows = () => {
             }
         } catch (error) {
             console.error('Error fetching movies:', error)
+        }
+    }
+
+    const fetchTheaters = async () => {
+        try {
+            const { data } = await axios.get('/api/theaters', {
+                headers: { Authorization: `Bearer ${await getToken()}` }
+            })
+            if (data.success) {
+                setTheaters(data.theaters || [])
+            }
+        } catch (error) {
+            console.error('Error fetching theaters:', error)
         }
     }
 
@@ -63,12 +78,13 @@ const AddShows = () => {
     const handleSubmit = async () => {
         try {
             setAddingShow(true)
-            if (!selectedMovie || Object.keys(dateTimeSelection).length === 0 || !showPrice) {
+            if (!selectedMovie || !selectedTheater || Object.keys(dateTimeSelection).length === 0 || !showPrice) {
                 return toast('Missing required fields');
             }
             const showsInput = Object.entries(dateTimeSelection).map(([date, time]) => ({date, time}));
             const payload = {
                 movieId: selectedMovie,
+                theaterId: selectedTheater,
                 showsInput,
                 showPrice: Number(showPrice)
             }
@@ -78,6 +94,7 @@ const AddShows = () => {
             if (data.success) {
                 toast.success(data.message)
                 setSelectedMovie(null)
+                setSelectedTheater(null)
                 setDateTimeSelection({})
                 setShowPrice("")
             } else {
@@ -93,6 +110,7 @@ const AddShows = () => {
     useEffect(() => {
         if (user) {
             fetchNowPlayingMovies();
+            fetchTheaters();
         }
     }, [user]);
 
@@ -133,6 +151,25 @@ const AddShows = () => {
                     ))}
                 </div>
             </div>
+
+            {/** Theater Selection */}
+            {selectedMovie && (
+                <div className="mt-8">
+                    <label className="block text-sm font-medium mb-2">Select Theater</label>
+                    <select
+                        value={selectedTheater || ""}
+                        onChange={(e) => setSelectedTheater(e.target.value)}
+                        className="w-full border border-gray-600 px-3 py-2 rounded-md outline-none bg-black/40"
+                    >
+                        <option value="">-- Choose a Theater --</option>
+                        {theaters.map((theater) => (
+                            <option key={theater._id} value={theater._id}>
+                                {theater.name} ({theater.location})
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
 
             {/** Show Prince Input */}
             <div className="mt-8">
