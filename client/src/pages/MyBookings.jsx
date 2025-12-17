@@ -66,6 +66,7 @@ const MyBookings = () => {
                         <div className="text-sm">
                             <p><span className="text-gray-400">Total Tickets:</span> {item.bookedSeats.length}</p>
                             <p><span className="text-gray-400">Seat Number:</span> {item.bookedSeats.join(", ")}</p>
+                            <p><span className="text-gray-400">Theater:</span> {item.show.theater?.name || 'Not assigned'}</p>
                         </div>
                     </div>
                 </div>

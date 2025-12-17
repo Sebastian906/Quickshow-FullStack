@@ -6,6 +6,20 @@ import { toast } from 'react-hot-toast'
 
 axios.defaults.baseURL = import.meta.env.VITE_BASE_URL
 
+// Interceptor para silenciar errores 401 de admin check
+axios.interceptors.response.use(
+    response => response,
+    error => {
+        // Silenciar error 401 de la ruta de admin check - devolver respuesta satisfactoria con success: false
+        if (error.response?.status === 401 && error.config?.url === '/api/admin/is-admin') {
+            return Promise.resolve({
+                data: { success: false, isAdmin: false }
+            });
+        }
+        return Promise.reject(error);
+    }
+);
+
 export const AppContext = createContext()
 
 export const AppProvider = ({ children }) => {
@@ -26,14 +40,12 @@ export const AppProvider = ({ children }) => {
         try {
             // Si no hay usuario, no es admin
             if (!user) {
-                console.log('No user logged in');
                 setIsAdmin(false);
                 return;
             }
 
             const token = await getToken();
             if (!token) {
-                console.log('No authentication token available');
                 setIsAdmin(false);
                 return;
             }
@@ -51,7 +63,7 @@ export const AppProvider = ({ children }) => {
                 setIsAdmin(false);
             }
         } catch (error) {
-            console.log('Admin check error:', error.response?.data || error.message);
+            // Silently handle errors - user is not admin
             setIsAdmin(false);
         } finally {
             setIsAdminLoading(false);
@@ -75,7 +87,6 @@ export const AppProvider = ({ children }) => {
         try {
             const token = await getToken();
             if (!token) {
-                console.log('No authentication token available');
                 return;
             }
             const { data } = await axios.get('/api/user/favorites', { 
@@ -90,7 +101,7 @@ export const AppProvider = ({ children }) => {
                 toast.error(data.message)
             }
         } catch (error) {
-            console.log('Favorites fetch error:', error.response?.data || error.message);
+            // Silently handle errors
         }
     }
 
