@@ -65,7 +65,7 @@ export class ShowService {
     // API to add a new show to the database
     async addShow(addShowDto: AddShowDto): Promise<{ success: boolean; message: string }> {
         try {
-            const { movieId, showsInput, showPrice } = addShowDto;
+            const { movieId, theaterId, showsInput, showPrice } = addShowDto;
             let movie = await this.movieModel.findById(movieId).exec();
             if (!movie) {
                 // Fetch movie details and credits from TMDB API
@@ -114,6 +114,7 @@ export class ShowService {
 
             const showsToCreate: Array<{
                 movie: string;
+                theater: string;
                 showDateTime: Date;
                 showPrice: number;
                 occupiedSeats: Record<string, any>;
@@ -125,6 +126,7 @@ export class ShowService {
                     const dateTimeString = `${showDate}T${time}`;
                     showsToCreate.push({
                         movie: movieId,
+                        theater: theaterId,
                         showDateTime: new Date(dateTimeString),
                         showPrice,
                         occupiedSeats: {}

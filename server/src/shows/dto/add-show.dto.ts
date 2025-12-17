@@ -5,6 +5,7 @@ export class ShowInputDto {
 
 export class AddShowDto {
     movieId: string;
+    theaterId: string;
     showsInput: ShowInputDto[];
     showPrice: number;
 }
