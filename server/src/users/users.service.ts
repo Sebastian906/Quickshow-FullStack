@@ -63,7 +63,13 @@ export class UsersService {
         try {
             const bookings = await this.bookingModel
                 .find({ user: userId })
-                .populate({ path: 'show', populate: { path: 'movie' } })
+                .populate({ 
+                    path: 'show', 
+                    populate: [
+                        { path: 'movie' },
+                        { path: 'theater' }
+                    ]
+                })
                 .sort({ createdAt: -1 });
             return { success: true, bookings };
         } catch (error) {

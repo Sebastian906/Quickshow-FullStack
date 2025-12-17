@@ -8,8 +8,8 @@ export class Show {
     @Prop({ type: String, required: true, ref: 'Movie' })
     movie: string;
 
-    @Prop({ type: Types.ObjectId, required: true, ref: 'Theater' })
-    theater: Types.ObjectId;
+    @Prop({ type: Types.ObjectId, ref: 'Theater' })
+    theater?: Types.ObjectId;
 
     @Prop({ type: Date, required: true })
     showDateTime: Date;

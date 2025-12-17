@@ -21,18 +21,14 @@ export class AdminGuard implements CanActivate {
         throw new UnauthorizedException('Not Authorized');
       }
       const user = await clerkClient.users.getUser(userId);
-      console.log('User metadata:', user.privateMetadata);
       
       if (!user.privateMetadata || user.privateMetadata.role !== 'admin') {
-        console.log('User is not admin. Role:', user.privateMetadata?.role);
         throw new UnauthorizedException('Not Authorized - Admin access required');
       }
       
-      console.log('User is admin');
       request.user = user;
       return true;
     } catch (error) {
-      console.error('Admin guard error:', error.message);
       throw new UnauthorizedException(error.message || 'Not Authorized');
     }
   }
