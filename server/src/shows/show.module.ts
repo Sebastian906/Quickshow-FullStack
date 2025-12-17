@@ -6,12 +6,14 @@ import { ShowController } from './show.controller';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
 import { Movie, MovieSchema } from 'src/movies/schemas/movie.schema';
+import { Theater, TheaterSchema } from 'src/theaters/schema/theater.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Show.name, schema: ShowSchema },
       { name: Movie.name, schema: MovieSchema },
+      { name: Theater.name, schema: TheaterSchema },
     ]),
     HttpModule,
     ConfigModule,
