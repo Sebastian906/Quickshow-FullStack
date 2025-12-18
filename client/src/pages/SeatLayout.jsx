@@ -7,6 +7,8 @@ import isoTimeFormat from "../lib/isoTimeFormat"
 import BlurCircle from "../components/BlurCircle"
 import toast from 'react-hot-toast'
 import { useAppContext } from "../context/AppContext"
+import { useLanguage } from "../context/LanguageContext"
+import { translations } from "../locales/translation.js"
 
 const SeatLayout = () => {
 
@@ -20,6 +22,8 @@ const SeatLayout = () => {
     const [isBooking, setIsBooking] = useState(false)
 
     const navigate = useNavigate()
+    const { language } = useLanguage()
+    const t = translations[language].seatLayout
 
     const { axios, getToken, user } = useAppContext()
 
@@ -48,7 +52,7 @@ const SeatLayout = () => {
 
     const handleSeatClick = (seatId) => {
         if (!selectedTime) {
-            return toast("Please select time first!")
+            return toast(t.selectTime)
         }
         if (!selectedSeats.includes(seatId) && selectedSeats.length >= 5) {
             return toast("You can only select 5 seats")
@@ -215,7 +219,7 @@ const SeatLayout = () => {
         <div className="flex flex-col md:flex-row px-6 md:px-16 lg:px-40 py-30 md:pt-50">
             {/** Available Timings */}
             <div className="w-60 bg-primary/10 border border-primary/20 rounded-lg py-10 h-max md:sticky md:top-30">
-                <p className="text-lg font-semibold px-6">Available Timings</p>
+                <p className="text-lg font-semibold px-6">{t.availableTimings}</p>
                 <div className="mt-5 space-y-1">
                     {show.dateTime[date]?.map((item) => (
                         <div
@@ -230,7 +234,7 @@ const SeatLayout = () => {
                             <ClockIcon className="w-4 h-4" />
                             <p className="text-sm">{isoTimeFormat(item.time)}</p>
                         </div>
-                    )) || <p className="px-6 text-sm text-gray-400">No showtimes available</p>}
+                    )) || <p className="px-6 text-sm text-gray-400">{t.noTimings}</p>}
                 </div>
             </div>
 
@@ -238,13 +242,13 @@ const SeatLayout = () => {
             <div className="relative flex-1 flex flex-col items-center max-md:mt-16">
                 <BlurCircle top="-100px" left="-100px" />
                 <BlurCircle bottom="0" right="0" />
-                <h1 className="text-2xl font-semibold mb-4">Select your seat</h1>
+                <h1 className="text-2xl font-semibold mb-4">{t.selectSeat}</h1>
                 <img src={assets.screenImage} alt="screen" />
-                <p className="text-gray-400 text-sm mb-6">SCREEN SIDE</p>
+                <p className="text-gray-400 text-sm mb-6">{t.screenSide}</p>
                 
                 {!selectedTime && (
                     <div className="text-center mb-6 text-yellow-500">
-                        <p>Please select a showtime first</p>
+                        <p>{t.selectTime}</p>
                     </div>
                 )}
 
@@ -265,21 +269,21 @@ const SeatLayout = () => {
                 <div className="flex gap-4 mt-8 text-xs">
                     <div className="flex items-center gap-2">
                         <div className="h-6 w-6 border border-primary/60 rounded"></div>
-                        <span>Available</span>
+                        <span>{t.available}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="h-6 w-6 bg-primary rounded"></div>
-                        <span>Selected</span>
+                        <span>{t.selected}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="h-6 w-6 border border-primary/60 rounded opacity-30"></div>
-                        <span>Occupied</span>
+                        <span>{t.occupied}</span>
                     </div>
                 </div>
 
                 {selectedSeats.length > 0 && (
                     <div className="mt-4 text-sm">
-                        <p>Selected seats: <span className="font-semibold text-primary">{selectedSeats.join(', ')}</span></p>
+                        <p>{t.selectedSeats} <span className="font-semibold text-primary">{selectedSeats.join(', ')}</span></p>
                     </div>
                 )}
                 
@@ -292,7 +296,7 @@ const SeatLayout = () => {
                             : 'bg-primary hover:bg-primary-dull cursor-pointer active:scale-95'
                     }`}
                 >
-                    {isBooking ? 'Processing...' : 'Proceed to Checkout'}
+                    {isBooking ? t.processing : t.proceedCheckout}
                     {!isBooking && <ArrowRightIcon strokeWidth={3} className="w-4 h-4"/>}
                 </button>
             </div>

@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react"
 import BlurCircle from "../components/BlurCircle"
 import { useAppContext } from "../context/AppContext"
+import { useLanguage } from "../context/LanguageContext"
+import { translations } from "../locales/translation.js"
 import { ClockIcon, MapPinIcon, PhoneIcon, StarIcon } from "lucide-react"
 import Loading from "../components/Loading"
 import toast from "react-hot-toast"
 
 const Theaters = () => {
     const { axios, image_base_url } = useAppContext()
+    const { language } = useLanguage()
+    const t = translations[language].theaters
     const [theaters, setTheaters] = useState([])
     const [isLoading, setIsLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
@@ -43,13 +47,13 @@ const Theaters = () => {
             <BlurCircle bottom="0px" right="600px"/>
             
             <div className="max-w-5xl mx-auto">
-                <h1 className="text-2xl font-semibold mb-4">Our Theaters</h1>
+                <h1 className="text-2xl font-semibold mb-4">{t.title}</h1>
                 
                 {/* Search Bar */}
                 <div className="mb-8">
                     <input
                         type="text"
-                        placeholder="Search theaters by name or location..."
+                        placeholder={t.search}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:outline-none focus:border-primary text-white"
@@ -96,7 +100,7 @@ const Theaters = () => {
                                             </div>
                                             {theater.totalScreens > 0 && (
                                                 <div className="text-sm text-gray-400">
-                                                    {theater.totalScreens} Screen{theater.totalScreens > 1 ? 's' : ''}
+                                                    {theater.totalScreens} {theater.totalScreens > 1 ? t.screens_plural : t.screens}
                                                 </div>
                                             )}
                                         </div>
@@ -127,7 +131,7 @@ const Theaters = () => {
                 ) : (
                     <div className="text-center py-20">
                         <p className="text-gray-400 text-lg">
-                            {searchTerm ? 'No theaters found matching your search' : 'No theaters available'}
+                            {searchTerm ? t.noResults : t.noTheaters}
                         </p>
                     </div>
                 )}

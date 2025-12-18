@@ -1,19 +1,23 @@
 import { ArrowRight, CalendarIcon, ClockIcon } from "lucide-react"
 import { assets } from "../assets/assets"
 import { useNavigate } from "react-router-dom"
+import { useLanguage } from "../context/LanguageContext"
+import { translations } from "../locales/translation.js"
 
 const HeroSection = () => {
 
     const navigate = useNavigate();
+    const { language } = useLanguage()
+    const t = translations[language].home
 
     return (
         <div className='flex flex-col items-start justify-center gap-4 px-6 md:px-16 lg:px-36 bg-[url("/backgroundImage.png")] bg-cover bg-center h-screen'>
             <img src={assets.marvelLogo} alt="" />
 
-            <h1 className="text-5xl md:text-[70px] md:leading-18 font-semibold max-w-110">Guardians <br/> of the Galaxy</h1>
+            <h1 className="text-5xl md:text-[70px] md:leading-18 font-semibold max-w-110">{t.heroTitle.split(' ').slice(0, -3).join(' ')} <br/> {t.heroTitle.split(' ').slice(-3).join(' ')}</h1>
 
             <div className="flex items-center gap-4 text-gray-300">
-                <span>Action | Adventure | Sci-Fi</span>
+                <span>{t.heroGenres}</span>
                 <div className="flex items-center gap-1">
                     <CalendarIcon className="w-4.5 h-4.5"/> 2014
                 </div>
@@ -21,9 +25,9 @@ const HeroSection = () => {
                     <ClockIcon className="w-4.5 h-4.5"/> 2h 2m
                 </div>
             </div>
-            <p className="max-w-md text-gray-300">Light years from Earth, 26 years after being abducted, Peter Quill finds himself the prime target of a manhunt after discovering an orb wanted by Ronan the Accuser.</p>
+            <p className="max-w-md text-gray-300">{t.heroDescription}</p>
             <button onClick={() => navigate('/movies')} className="flex items-center gap-1 px-6 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer">
-                Explore Movies
+                {t.exploreMovies}
                 <ArrowRight className="w-5 h-5"/>
             </button>
         </div>

@@ -8,12 +8,16 @@ import DateSelect from '../components/DateSelect'
 import MovieCard from '../components/MovieCard'
 import Loading from '../components/Loading'
 import { useAppContext } from '../context/AppContext'
+import { useLanguage } from '../context/LanguageContext'
+import { translations } from '../locales/translation.js'
 import toast from 'react-hot-toast'
 
 const MovieDetails = () => {
     const navigate = useNavigate()
     const { id } = useParams()
     const [show, setShow] = useState(null)
+    const { language } = useLanguage()
+    const t = translations[language].movieDetails
 
     const { shows, axios, getToken, user, fetchFavoriteMovies, favoriteMovies, image_base_url } = useAppContext()
 
@@ -66,7 +70,7 @@ const MovieDetails = () => {
                     </h1>
                     <div className='flex items-center gap-3 text-gray-300'>
                         <StarIcon className='w-5 h-5 text-primary fill-primary'/>
-                        {show.movie.vote_average.toFixed(1)} User Rating
+                        {show.movie.vote_average.toFixed(1)} {t.userRating}
                     </div>
                     <p className='text-gray-400 mt-2 text-sm leading-tight max-w-xl'>
                         {show.movie.overview}
@@ -78,9 +82,9 @@ const MovieDetails = () => {
                     <div className='flex items-center flex-wrap gap-4 mt-4'>
                         <button className='flex items-center gap-2 px-7 py-3 text-sm bg-gray-800 hover:bg-gray-900 transition rounded-md font-medium cursor-pointer active:scale-95'>
                             <PlayCircleIcon className='w-5 h-5'/>
-                            Watch Trailer
+                            {t.watchTrailer}
                         </button>
-                        <a href="#dateSelect" className='px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer active:scale-95'>Buy Tickets</a>
+                        <a href="#dateSelect" className='px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer active:scale-95'>{t.buyTickets}</a>
                         <button 
                             onClick={handleFavorite} 
                             className='bg-gray-700 p-2.5 rounded-full transition cursor-pointer active:scale-95'
@@ -92,7 +96,7 @@ const MovieDetails = () => {
             </div>
 
             <p className='text-lg font-medium mt-20'>
-                Your Favorite Cast
+                {t.favoritesCast}
             </p>
 
             <div className='overflow-x-auto no-scrollbar mt-8 pb-4'>
@@ -114,7 +118,7 @@ const MovieDetails = () => {
 
             <DateSelect dateTime={show.dateTime} id={id}/>
 
-            <p className='text-lg font-medium mt-20 mb-8'>You May Also Like</p>
+            <p className='text-lg font-medium mt-20 mb-8'>{t.youMayLike}</p>
             <div className='flex flex-wrap max-sm:justify-center gap-8'>
                 {shows.slice(0,4).map((movie, index) => (
                     <MovieCard key={index} movie={movie}/>
@@ -122,7 +126,7 @@ const MovieDetails = () => {
             </div>
 
             <div className='flex justify-center mt-20'>
-                <button onClick={() => {navigate('/movies'); scrollTo(0,0)}} className='px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer'>Show More</button>
+                <button onClick={() => {navigate('/movies'); scrollTo(0,0)}} className='px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer'>{t.showMore}</button>
             </div>
         </div>
     ) : <div>

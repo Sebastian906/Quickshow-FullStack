@@ -5,9 +5,13 @@ import { StarIcon } from 'lucide-react'
 import { kConverter } from '../lib/kConverter'
 import Loading from '../components/Loading'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../context/LanguageContext'
+import { translations } from '../locales/translation.js'
 
 const Releases = () => {
     const { axios, image_base_url } = useAppContext()
+    const { language } = useLanguage()
+    const t = translations[language].releases
     const [upcomingMovies, setUpcomingMovies] = useState([])
     const [isLoading, setIsLoading] = useState(true)
 
@@ -39,8 +43,8 @@ const Releases = () => {
         <div className='relative my-40 mb-60 px-6 md:px-16 lg:px-40 xl:px-44 overflow-hidden min-h-[80vh]'>
             <BlurCircle top='150px' left='0px'/>
             <BlurCircle bottom='50px' right='50px'/>
-            <h1 className='text-lg font-medium my-4'>Coming Soon</h1>
-            <p className='text-sm text-gray-400 mb-8'>Discover upcoming movies that will be available soon</p>
+            <h1 className='text-lg font-medium my-4'>{t.comingSoon}</h1>
+            <p className='text-sm text-gray-400 mb-8'>{t.description}</p>
             
             <div className='flex flex-wrap max-sm:justify-center gap-8'>
                 {upcomingMovies.map((movie) => (
@@ -62,9 +66,9 @@ const Releases = () => {
 
                         <div className="flex items-center justify-between mt-4 pb-3">
                             <div className="flex flex-col gap-1">
-                                <p className="text-xs text-gray-400">Release Date</p>
+                                <p className="text-xs text-gray-400">{t.releaseDate}</p>
                                 <p className="text-sm font-medium">
-                                    {new Date(movie.release_date).toLocaleDateString('en-US', {
+                                    {new Date(movie.release_date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', {
                                         month: 'short',
                                         day: 'numeric',
                                         year: 'numeric'
@@ -79,7 +83,7 @@ const Releases = () => {
 
                         {movie.vote_count && (
                             <p className="text-xs text-gray-500 text-center pb-2">
-                                {kConverter(movie.vote_count)} votes
+                                {kConverter(movie.vote_count)} {t.votes}
                             </p>
                         )}
                     </div>
@@ -88,8 +92,8 @@ const Releases = () => {
         </div>
     ) : (
         <div className='flex flex-col items-center justify-center h-screen'>
-            <h1 className='text-3xl font-bold text-center'>No upcoming releases available</h1>
-            <p className='text-gray-400 mt-4'>Check back soon for new movie releases!</p>
+            <h1 className='text-3xl font-bold text-center'>{t.noReleases}</h1>
+            <p className='text-gray-400 mt-4'>{t.checkBack}</p>
         </div>
     )
 }

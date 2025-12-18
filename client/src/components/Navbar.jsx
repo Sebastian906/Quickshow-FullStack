@@ -4,6 +4,9 @@ import { MenuIcon, SearchIcon, TicketPlus, XIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useClerk, UserButton, useUser } from '@clerk/clerk-react'
 import { useAppContext } from '../context/AppContext'
+import { useLanguage } from '../context/LanguageContext'
+import { translations } from '../locales/translation.js'
+import LanguageSelector from './LanguageSelector'
 
 const Navbar = () => {
 
@@ -14,6 +17,8 @@ const Navbar = () => {
     const navigate = useNavigate();
 
     const { favoriteMovies } = useAppContext();
+    const { language } = useLanguage();
+    const t = translations[language].nav;
 
     return (
         <div className='fixed top-0 left-0 z-50 w-full flex items-center justify-between px-6 md:px-16 lg:px-36 py-5'>
@@ -31,50 +36,51 @@ const Navbar = () => {
                     to='/'
                     className={`px-4 py-2 rounded-full transition-colors ${location.pathname === '/' ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 >
-                    Home
+                    {t.home}
                 </Link>
                 <Link
                     onClick={() => { scrollTo(0, 0); setIsOpen(false) }}
                     to='/movies'
                     className={`px-4 py-2 rounded-full transition-colors ${location.pathname === '/movies' ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 >
-                    Movies
+                    {t.movies}
                 </Link>
                 <Link
                     onClick={() => { scrollTo(0, 0); setIsOpen(false) }}
                     to='/theaters'
                     className={`px-4 py-2 rounded-full transition-colors ${location.pathname === '/theaters' ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 >
-                    Theaters
+                    {t.theaters}
                 </Link>
                 <Link
                     onClick={() => { scrollTo(0, 0); setIsOpen(false) }}
                     to='/releases'
                     className={`px-4 py-2 rounded-full transition-colors ${location.pathname === '/releases' ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 >
-                    Releases
+                    {t.releases}
                 </Link>
                 {favoriteMovies.length > 0 && <Link
                     onClick={() => { scrollTo(0, 0); setIsOpen(false) }}
                     to='/favorites'
                     className={`px-4 py-2 rounded-full transition-colors ${location.pathname === '/favorites' ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 >
-                    Favorites
+                    {t.favorites}
                 </Link>}
             </div>
 
-            <div className='flex items-center gap-8'>
+            <div className='flex items-center gap-4'>
+                <LanguageSelector />
                 <SearchIcon className='max-md:hidden w-6 h-6 cursor-pointer' />
                 {
                     !user ? (
                         <button onClick={openSignIn} className='px-4 py-1 sm:px-7 sm:py-2 bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer'>
-                            Login
+                            {t.login}
                         </button>
                     ) : (
                         <UserButton>
                             <UserButton.MenuItems>
                                 <UserButton.Action
-                                    label="My Bookings"
+                                    label={t.myBookings}
                                     labelIcon={<TicketPlus width={15} />}
                                     onClick={() => navigate('/my-bookings')}
                                 />

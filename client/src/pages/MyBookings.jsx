@@ -5,12 +5,16 @@ import BlurCircle from "../components/BlurCircle"
 import timeFormat from "../lib/timeFormat"
 import { dateFormat } from "../lib/dateFormat"
 import { useAppContext } from "../context/AppContext"
+import { useLanguage } from "../context/LanguageContext"
+import { translations } from "../locales/translation.js"
 import { Link } from "react-router-dom"
 
 const MyBookings = () => {
 
     const currency = import.meta.env.VITE_CURRENCY
     const { axios, getToken, user, image_base_url } = useAppContext()
+    const { language } = useLanguage()
+    const t = translations[language].myBookings
     const [bookings, setBookings] = useState([])
     const [isLoading, setIsLoading] = useState(true)
 
@@ -40,7 +44,7 @@ const MyBookings = () => {
             <div>
                 <BlurCircle bottom="0px" left="600px"/>
             </div>
-            <h1 className="text-lg font-semibold mb-4">My Bookings</h1>
+            <h1 className="text-lg font-semibold mb-4">{t.title}</h1>
             {bookings.map((item, index) => (
                 <div 
                     key={index}
@@ -61,12 +65,12 @@ const MyBookings = () => {
                     <div className="flex flex-col md:items-end md:text-right justify-between p-4">
                         <div className="flex items-center gap-4">
                             <p className="text-2xl font-semibold mb-3">{currency}{item.amount}</p>
-                            {!item.isPaid && <Link to={item.paymentLink} className="bg-primary px-4 py-1.5 mb-3 text-sm rounded-full font-medium cursor-pointer">Pay Now</Link>}
+                            {!item.isPaid && <Link to={item.paymentLink} className="bg-primary px-4 py-1.5 mb-3 text-sm rounded-full font-medium cursor-pointer">{t.payNow}</Link>}
                         </div>
                         <div className="text-sm">
-                            <p><span className="text-gray-400">Total Tickets:</span> {item.bookedSeats.length}</p>
-                            <p><span className="text-gray-400">Seat Number:</span> {item.bookedSeats.join(", ")}</p>
-                            <p><span className="text-gray-400">Theater:</span> {item.show.theater?.name || 'Not assigned'}</p>
+                            <p><span className="text-gray-400">{t.totalTickets}:</span> {item.bookedSeats.length}</p>
+                            <p><span className="text-gray-400">{t.seatNumber}:</span> {item.bookedSeats.join(", ")}</p>
+                            <p><span className="text-gray-400">{t.theater}:</span> {item.show.theater?.name || t.notAssigned}</p>
                         </div>
                     </div>
                 </div>
