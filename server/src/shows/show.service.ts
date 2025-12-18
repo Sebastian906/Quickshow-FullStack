@@ -22,7 +22,7 @@ export class ShowService {
         @InjectModel(Movie.name) private movieModel: Model<MovieDocument>,
         private readonly httpService: HttpService,
         private readonly configService: ConfigService,
-    ) { 
+    ) {
         this.tmdbApiKey = this.configService.get<string>('TMDB_API_KEY') || '';;
         if (!this.tmdbApiKey) {
             console.warn('Warning: TMDB_API_KEY is not set in environment variables');
@@ -119,7 +119,7 @@ export class ShowService {
                 showPrice: number;
                 occupiedSeats: Record<string, any>;
             }> = [];
-            
+
             showsInput.forEach(show => {
                 const showDate = show.date;
                 show.time.forEach((time) => {
@@ -170,7 +170,7 @@ export class ShowService {
                 .populate('movie')
                 .sort({ showDateTime: 1 })
                 .exec();
-            
+
             // Filter unique shows by movie
             const uniqueMovieMap = new Map();
             shows.forEach(show => {
@@ -207,15 +207,15 @@ export class ShowService {
                 if (!dateTime[date]) {
                     dateTime[date] = [];
                 }
-                dateTime[date].push({ 
-                    time: show.showDateTime, 
-                    showId: show._id 
+                dateTime[date].push({
+                    time: show.showDateTime,
+                    showId: show._id
                 });
             });
-            return { 
-                success: true, 
-                movie, 
-                dateTime 
+            return {
+                success: true,
+                movie,
+                dateTime
             };
         } catch (error) {
             console.error('Error getting show:', error);
@@ -224,7 +224,7 @@ export class ShowService {
             }
             throw new BadRequestException(error.message || 'Failed to get show');
         }
-    } 
+    }
 
     async findAll(): Promise<Show[]> {
         return this.showModel.find().populate('movie').exec()
@@ -232,7 +232,7 @@ export class ShowService {
 
     async findOne(id: string): Promise<Show> {
         const show = await this.showModel.findOne({ movie: id }).populate('movie').exec();
-        
+
         if (!show) {
             throw new NotFoundException(`Show with ID ${id} not found`);
         }
@@ -403,5 +403,37 @@ export class ShowService {
         }
 
         return deletedShow;
+    }
+
+    async getUpcomingMovies() {
+        try {
+            if (!this.tmdbApiKey) {
+                throw new Error('TMDB_API_KEY is not configured');
+            }
+            const response = await firstValueFrom(
+                this.httpService.get(`${this.tmdbBaseUrl}/movie/upcoming`, {
+                    headers: {
+                        Authorization: `Bearer ${this.tmdbApiKey}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    params: {
+                        language: 'en-US',
+                        page: 1,
+                        region: 'US'
+                    }
+                }),
+            );
+            return {
+                success: true,
+                movies: response.data.results,
+            }
+        } catch (error) {
+            console.error('Error fetching upcoming movies:', error);
+            return {
+                success: false,
+                message: error.response?.data?.status_message || error.message || 'Failed to fetch upcoming movies from TMDB',
+            }
+        }
     }
 }

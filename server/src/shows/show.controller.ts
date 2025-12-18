@@ -13,6 +13,11 @@ export class ShowController {
         return this.showService.getNowPlayingMovies();
     }
 
+    @Get('upcoming')
+    getUpcomingMovies() {
+        return this.showService.getUpcomingMovies();
+    }
+
     @Post('add')
     @UseGuards(AdminGuard)
     @HttpCode(HttpStatus.OK)
