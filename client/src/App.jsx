@@ -20,6 +20,7 @@ import Loading from './components/Loading'
 import Theaters from './pages/Theaters'
 import ListTheaters from './pages/admin/ListTheaters'
 import AddTheaters from './pages/admin/AddTheaters'
+import Releases from './pages/Releases'
 
 const App = () => {
 
@@ -37,6 +38,7 @@ const App = () => {
         <Route path='/movies/:id' element={<MovieDetails/>}/>
         <Route path='/movies/:id/:date' element={<SeatLayout/>}/>
         <Route path='/theaters' element={<Theaters/>}/>
+        <Route path='/releases' element={<Releases/>}/>
         <Route path='/my-bookings' element={<MyBookings/>}/>
         <Route path='/loading/:nextUrl' element={<Loading/>}/>
         <Route path='/favorites' element={<Favorite/>}/>
